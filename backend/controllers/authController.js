@@ -52,7 +52,7 @@ const loginUsuario = async (req, res) => {
         const token = jwt.sign(
             { id: usuario.id, nombre: usuario.nombre, email: usuario.email },
             'secreto_gimnasio_123', // Clave secreta para firmar el token
-            { expiresIn: '8h' }
+            { expiresIn: '10m' }
         );
 
         res.json({

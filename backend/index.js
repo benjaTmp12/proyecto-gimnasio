@@ -3,10 +3,12 @@ const express = require('express');
 const cors = require('cors');
 const { sequelize } = require('./models');
 const authRoutes = require('./routes/authRoutes');
-const socioRoutes = require('./routes/socioRoutes'); // <-- NUEVO IMPORT
-
+const socioRoutes = require('./routes/socioRoutes'); 
+const membresiaRoutes = require('./routes/membresiaRoutes');
+const usuarioRoutes = require('./routes/usuarioRoutes');
 const app = express();
 const PORT = process.env.PORT || 3000;
+
 
 app.use(cors()); 
 app.use(express.json()); 
@@ -19,7 +21,9 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 
 // Rutas privadas de negocio (Protegidas)
-app.use('/api/socios', socioRoutes); // <-- NUEVA RUTA CONECTADA
+app.use('/api/socios', socioRoutes); 
+app.use('/api/membresias', membresiaRoutes);
+app.use('/api/usuarios', usuarioRoutes);
 
 app.listen(PORT, async () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);

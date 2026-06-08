@@ -1,10 +1,7 @@
 'use strict';
-const {
-  Model
-} = require('sequelize');
+const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class Membresia extends Model {
-   
     static associate(models) {
     }
   }
@@ -15,6 +12,8 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'Membresia',
+    tableName: 'Membresia', 
+    freezeTableName: true   
   });
   return Membresia;
 };
