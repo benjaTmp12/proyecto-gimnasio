@@ -273,7 +273,6 @@ import { ref, computed, onMounted } from 'vue';
 const props = defineProps({ token: String });
 const emit = defineEmits(['logout']);
 
-// Usa VITE_API_URL del .env; si no existe, cae a localhost
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const tabActual = ref('dashboard');
@@ -281,7 +280,6 @@ const cargando = ref(false);
 const busqueda = ref('');
 const errorRut = ref('');
 
-// Extraer nombre del usuario desde el token JWT
 const usuarioActual = computed(() => {
   try {
     const payload = JSON.parse(atob(props.token.split('.')[1]));
@@ -295,7 +293,6 @@ const tabs = [
   { id: 'membresias', label: 'Membresías', icono: '🏷️' },
 ];
 
-// ── TOAST ────────────────────────────────────────────
 const toast = ref({ visible: false, msg: '', tipo: 'ok' });
 let toastTimer = null;
 const mostrarToast = (msg, tipo = 'ok') => {
@@ -304,7 +301,6 @@ const mostrarToast = (msg, tipo = 'ok') => {
   toastTimer = setTimeout(() => { toast.value.visible = false; }, 3500);
 };
 
-// ── MODAL ────────────────────────────────────────────
 const modal = ref({ visible: false, titulo: '', msg: '', accion: null });
 const pedirConfirmacion = (tipo, id) => {
   modal.value = {
@@ -316,7 +312,6 @@ const pedirConfirmacion = (tipo, id) => {
 };
 const confirmarModal = () => { modal.value.accion?.(); modal.value.visible = false; };
 
-// ── FETCH HELPER ─────────────────────────────────────
 const api = async (path, opts = {}) => {
   const res = await fetch(`${API}${path}`, {
     ...opts,
@@ -330,7 +325,6 @@ const api = async (path, opts = {}) => {
   return res;
 };
 
-// ── VALIDACIÓN RUT CHILENO ───────────────────────────
 const validarRut = () => {
   const rut = formularioSocio.value.rut.trim();
   if (!rut) { errorRut.value = ''; return; }
@@ -348,7 +342,6 @@ const validarRut = () => {
   errorRut.value = dv === dvCalc ? '' : 'RUT inválido';
 };
 
-// ── SOCIOS ───────────────────────────────────────────
 const socios = ref([]);
 const socioEditandoId = ref(null);
 const formularioSocio = ref({ rut: '', nombre: '', apellido: '', email: '' });
@@ -417,7 +410,6 @@ const eliminarSocio = async (id) => {
   } catch { mostrarToast('Error de conexión.', 'err'); }
 };
 
-// ── MEMBRESÍAS ───────────────────────────────────────
 const membresias = ref([]);
 const membresiaEditandoId = ref(null);
 const formularioMembresia = ref({ tipo: '', precio: '', duracionDias: '' });

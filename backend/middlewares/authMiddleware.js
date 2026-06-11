@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-// GEN-06: Middleware de autenticación — protege rutas con JWT
+// GEN-06: 
 const verificarToken = (req, res, next) => {
     const token = req.header('Authorization');
 
@@ -11,7 +11,7 @@ const verificarToken = (req, res, next) => {
     try {
         const tokenLimpio = token.replace('Bearer ', '');
 
-        //  Usa JWT_SECRET desde variables de entorno (GEN-02)
+        //  (GEN-02)
         const verificado = jwt.verify(tokenLimpio, process.env.JWT_SECRET);
 
         req.usuario = verificado;

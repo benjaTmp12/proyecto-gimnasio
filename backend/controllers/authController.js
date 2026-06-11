@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Usuario } = require('../models');
 
-// GEN-04: Registro de usuario
+// GEN-04: 
 const registrarUsuario = async (req, res) => {
     try {
         const { nombre, email, password } = req.body;
@@ -27,7 +27,7 @@ const registrarUsuario = async (req, res) => {
     }
 };
 
-// GEN-05: Login y emisión JWT
+// GEN-05: 
 const loginUsuario = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -42,7 +42,7 @@ const loginUsuario = async (req, res) => {
             return res.status(401).json({ error: 'Credenciales inválidas' });
         }
 
-        // ✅ Usa JWT_SECRET desde variables de entorno (GEN-02)
+        //  Usa JWT_SECRET desde variables de entorno (GEN-02)
         const token = jwt.sign(
             { id: usuario.id, nombre: usuario.nombre, email: usuario.email },
             process.env.JWT_SECRET,
