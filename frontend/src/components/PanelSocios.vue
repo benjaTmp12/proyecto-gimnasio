@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-6xl mx-auto bg-white p-6 rounded-lg shadow-md mt-10">
     <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold">Pongame 7 profe</h2>
+      <h2 class="text-2xl font-bold">Panel Principal del Gimnasio</h2>
       <button @click="$emit('logout')" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 font-bold">
         Cerrar Sesión
       </button>
