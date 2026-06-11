@@ -1,8 +1,8 @@
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken'); 
+const jwt = require('jsonwebtoken');
 const { Usuario } = require('../models');
 
-
+// GEN-04: Registro de usuario
 const registrarUsuario = async (req, res) => {
     try {
         const { nombre, email, password } = req.body;
@@ -15,11 +15,7 @@ const registrarUsuario = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const nuevoUsuario = await Usuario.create({
-            nombre,
-            email,
-            password: hashedPassword
-        });
+        const nuevoUsuario = await Usuario.create({ nombre, email, password: hashedPassword });
 
         res.status(201).json({
             mensaje: 'Usuario registrado exitosamente',
@@ -31,28 +27,26 @@ const registrarUsuario = async (req, res) => {
     }
 };
 
-// Nueva función para el GEN-05
+// GEN-05: Login y emisión JWT
 const loginUsuario = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // 1. Verificar si el usuario existe
         const usuario = await Usuario.findOne({ where: { email } });
         if (!usuario) {
             return res.status(401).json({ error: 'Credenciales inválidas' });
         }
 
-        // 2. Verificar si la contraseña coincide
         const passwordValida = await bcrypt.compare(password, usuario.password);
         if (!passwordValida) {
             return res.status(401).json({ error: 'Credenciales inválidas' });
         }
 
-        // 3. Generar el Token JWT
+        // ✅ Usa JWT_SECRET desde variables de entorno (GEN-02)
         const token = jwt.sign(
             { id: usuario.id, nombre: usuario.nombre, email: usuario.email },
-            'secreto_gimnasio_123', // Clave secreta para firmar el token
-            { expiresIn: '10m' }
+            process.env.JWT_SECRET,
+            { expiresIn: '8h' }
         );
 
         res.json({
@@ -65,4 +59,5 @@ const loginUsuario = async (req, res) => {
         res.status(500).json({ error: 'Error interno al iniciar sesión' });
     }
 };
+
 module.exports = { registrarUsuario, loginUsuario };
