@@ -1,83 +1,107 @@
 <template>
-  <div class="min-h-screen bg-slate-950 flex items-center justify-center p-4" style="font-family: 'Inter', system-ui, sans-serif;">
-    <div class="w-full max-w-md">
-
-      <!-- Logo -->
-      <div class="text-center mb-8">
-        <div class="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-2xl font-black text-white mx-auto mb-4 shadow-lg shadow-indigo-900">G</div>
-        <h1 class="text-2xl font-black text-white tracking-tight">GymOS</h1>
-        <p class="text-slate-500 text-sm mt-1">Sistema de Gestión de Gimnasio</p>
+  <div class="min-h-screen flex items-center justify-center bg-slate-950 p-4" style="font-family: 'Inter', system-ui, sans-serif;">
+    <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl max-w-md w-full">
+      
+      <div class="flex flex-col items-center mb-8">
+        <div class="w-14 h-14 bg-indigo-600 rounded-xl flex items-center justify-center text-3xl font-black text-white shadow-lg shadow-indigo-600/20 mb-3">
+          G
+        </div>
+        <h2 class="text-2xl font-black text-white tracking-tight">GymOS</h2>
+        <p class="text-slate-500 text-sm font-medium">Panel de Administración</p>
       </div>
 
-      <!-- Card -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
-
-        <!-- Tabs login / registro -->
-        <div class="flex bg-slate-800 rounded-xl p-1 mb-6">
-          <button @click="modo = 'login'" :class="modo === 'login' ? 'bg-slate-700 text-white shadow' : 'text-slate-400 hover:text-white'"
-            class="flex-1 py-2 rounded-lg font-semibold text-sm transition-all">Iniciar sesión</button>
-          <button @click="modo = 'registro'" :class="modo === 'registro' ? 'bg-slate-700 text-white shadow' : 'text-slate-400 hover:text-white'"
-            class="flex-1 py-2 rounded-lg font-semibold text-sm transition-all">Registrarse</button>
+      <form v-if="vistaActual === 'login'" @submit.prevent="manejarLogin" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Email</label>
+          <input 
+            v-model="formularioLogin.email" 
+            type="email" 
+            class="w-full bg-slate-800 border border-slate-700 text-slate-100 px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder-slate-600 text-sm" 
+            placeholder="admin@gym.com" 
+            required>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Contraseña</label>
+          <input 
+            v-model="formularioLogin.password" 
+            type="password" 
+            class="w-full bg-slate-800 border border-slate-700 text-slate-100 px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder-slate-600 text-sm" 
+            placeholder="••••••••" 
+            required>
+        </div>
+        
+        <div class="flex justify-end">
+          <button type="button" @click="cambiarVista('olvide')" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
+            ¿Olvidaste tu contraseña?
+          </button>
         </div>
 
-        <!-- ── LOGIN ── -->
-        <form v-if="modo === 'login'" @submit.prevent="handleLogin" class="space-y-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Email</label>
-            <input v-model="email" type="email" placeholder="tu@email.com" required
-              class="w-full bg-slate-800 border border-slate-700 text-slate-100 px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none placeholder-slate-600 text-sm transition-colors">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Contraseña</label>
-            <input v-model="password" type="password" placeholder="••••••••" required
-              class="w-full bg-slate-800 border border-slate-700 text-slate-100 px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none placeholder-slate-600 text-sm transition-colors">
-          </div>
+        <button type="submit" :disabled="cargando" class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white py-3 rounded-xl font-bold shadow-lg shadow-indigo-600/20 transition-all">
+          {{ cargando ? 'Verificando...' : 'Ingresar al sistema' }}
+        </button>
+      </form>
 
-          <div v-if="errorMsg" class="bg-red-950 border border-red-800 text-red-300 text-sm px-4 py-3 rounded-xl">
-            {{ errorMsg }}
-          </div>
+      <form v-else-if="vistaActual === 'olvide'" @submit.prevent="solicitarToken" class="space-y-4">
+        <p class="text-slate-400 text-sm mb-4 text-center">Ingresa tu email y te enviaremos un código temporal para recuperar tu acceso.</p>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Email registrado</label>
+          <input 
+            v-model="formularioRecuperar.email" 
+            type="email" 
+            class="w-full bg-slate-800 border border-slate-700 text-slate-100 px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder-slate-600 text-sm" 
+            required>
+        </div>
 
-          <button type="submit" :disabled="cargando"
-            class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-xl font-bold text-sm transition-colors mt-2">
-            {{ cargando ? 'Ingresando...' : 'Ingresar' }}
-          </button>
-        </form>
+        <button type="submit" :disabled="cargando" class="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white py-3 rounded-xl font-bold shadow-lg shadow-amber-600/20 transition-all mt-2">
+          {{ cargando ? 'Procesando...' : 'Solicitar Código' }}
+        </button>
+        
+        <button type="button" @click="cambiarVista('login')" class="w-full text-slate-400 hover:text-white text-sm font-semibold transition-colors mt-2">
+          Volver al inicio
+        </button>
+      </form>
 
-        <!-- ── REGISTRO ── -->
-        <form v-if="modo === 'registro'" @submit.prevent="handleRegistro" class="space-y-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Nombre</label>
-            <input v-model="nombre" type="text" placeholder="Tu nombre" required
-              class="w-full bg-slate-800 border border-slate-700 text-slate-100 px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none placeholder-slate-600 text-sm transition-colors">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Email</label>
-            <input v-model="email" type="email" placeholder="tu@email.com" required
-              class="w-full bg-slate-800 border border-slate-700 text-slate-100 px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none placeholder-slate-600 text-sm transition-colors">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Contraseña</label>
-            <input v-model="password" type="password" placeholder="Mínimo 6 caracteres" required minlength="6"
-              class="w-full bg-slate-800 border border-slate-700 text-slate-100 px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none placeholder-slate-600 text-sm transition-colors">
-            <p class="text-xs text-slate-600 mt-1">Mínimo 6 caracteres</p>
-          </div>
+      <form v-else-if="vistaActual === 'reset'" @submit.prevent="cambiarPassword" class="space-y-4">
+        <p class="text-emerald-400 text-sm mb-4 text-center bg-emerald-900/30 p-3 rounded-lg border border-emerald-900">
+          Revisa la consola del backend para copiar el token.
+        </p>
+        
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Token de Seguridad</label>
+          <input 
+            v-model="formularioReset.token" 
+            type="text" 
+            class="w-full bg-slate-800 border border-slate-700 text-slate-100 px-4 py-3 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all placeholder-slate-600 text-sm font-mono" 
+            placeholder="Pega el código aquí..." 
+            required>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Nueva Contraseña</label>
+          <input 
+            v-model="formularioReset.nuevaPassword" 
+            type="password" 
+            class="w-full bg-slate-800 border border-slate-700 text-slate-100 px-4 py-3 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all placeholder-slate-600 text-sm" 
+            placeholder="Mínimo 6 caracteres" 
+            minlength="6" 
+            required>
+        </div>
 
-          <div v-if="errorMsg" class="bg-red-950 border border-red-800 text-red-300 text-sm px-4 py-3 rounded-xl">
-            {{ errorMsg }}
-          </div>
-          <div v-if="exitoMsg" class="bg-emerald-950 border border-emerald-800 text-emerald-300 text-sm px-4 py-3 rounded-xl">
-            {{ exitoMsg }}
-          </div>
+        <button type="submit" :disabled="cargando" class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white py-3 rounded-xl font-bold shadow-lg shadow-emerald-600/20 transition-all mt-2">
+          {{ cargando ? 'Actualizando...' : 'Guardar Nueva Contraseña' }}
+        </button>
 
-          <button type="submit" :disabled="cargando"
-            class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-xl font-bold text-sm transition-colors mt-2">
-            {{ cargando ? 'Registrando...' : 'Crear cuenta' }}
-          </button>
-        </form>
+        <button type="button" @click="cambiarVista('login')" class="w-full text-slate-400 hover:text-white text-sm font-semibold transition-colors mt-2">
+          Cancelar
+        </button>
+      </form>
 
+      <div 
+        v-if="mensajeG" 
+        :class="mensajeG.tipo === 'error' ? 'bg-red-900/50 text-red-400 border-red-800' : 'bg-emerald-900/50 text-emerald-400 border-emerald-800'" 
+        class="mt-5 p-3 rounded-lg border text-sm text-center font-semibold animate-pulse">
+        {{ mensajeG.texto }}
       </div>
 
-      <p class="text-center text-slate-700 text-xs mt-6">GymOS — Sistema de Gestión de Gimnasio</p>
     </div>
   </div>
 </template>
@@ -86,64 +110,104 @@
 import { ref } from 'vue';
 
 const emit = defineEmits(['login-success']);
-
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
-const modo = ref('login');
-const email = ref('');
-const password = ref('');
-const nombre = ref('');
-const errorMsg = ref('');
-const exitoMsg = ref('');
+// Estados
+const vistaActual = ref('login'); // 'login', 'olvide', 'reset'
 const cargando = ref(false);
+const mensajeG = ref(null);
 
-const limpiar = () => { errorMsg.value = ''; exitoMsg.value = ''; };
+// Formularios
+const formularioLogin = ref({ email: '', password: '' });
+const formularioRecuperar = ref({ email: '' });
+const formularioReset = ref({ token: '', nuevaPassword: '' });
 
-const handleLogin = async () => {
-  limpiar();
+const mostrarMensaje = (texto, tipo) => {
+  mensajeG.value = { texto, tipo };
+  setTimeout(() => { mensajeG.value = null; }, 5000);
+};
+
+const cambiarVista = (vista) => {
+  vistaActual.value = vista;
+  mensajeG.value = null;
+};
+
+// --- API LLAMADAS ---
+
+const manejarLogin = async () => {
   cargando.value = true;
+  mensajeG.value = null;
   try {
-    const res = await fetch(`${API}/auth/login`, {
+    const response = await fetch(`${API}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email.value, password: password.value }),
+      body: JSON.stringify(formularioLogin.value)
     });
-    const data = await res.json();
-    if (!res.ok) {
-      errorMsg.value = data.error || data.errores?.[0]?.msg || 'Credenciales incorrectas.';
-      return;
+    const data = await response.json();
+    
+    // Capturamos si la API nos devuelve error de validación express-validator
+    if (!response.ok) {
+      if (data.errores) throw new Error(data.errores[0].msg);
+      throw new Error(data.error || 'Credenciales inválidas');
     }
+    
     emit('login-success', data.token);
-  } catch {
-    errorMsg.value = 'No se pudo conectar al servidor.';
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
   } finally {
     cargando.value = false;
   }
 };
 
-const handleRegistro = async () => {
-  limpiar();
+const solicitarToken = async () => {
   cargando.value = true;
+  mensajeG.value = null;
   try {
-    const res = await fetch(`${API}/auth/registro`, {
+    const response = await fetch(`${API}/auth/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre: nombre.value, email: email.value, password: password.value }),
+      body: JSON.stringify(formularioRecuperar.value)
     });
-    const data = await res.json();
-    if (!res.ok) {
-      if (data.errores) {
-        errorMsg.value = data.errores.map(e => e.msg).join(' · ');
-      } else {
-        errorMsg.value = data.error || 'Error al registrar.';
-      }
-      return;
+    const data = await response.json();
+    
+    if (!response.ok) {
+      if (data.errores) throw new Error(data.errores[0].msg);
+      throw new Error(data.error || 'Error al solicitar token');
     }
-    exitoMsg.value = '¡Cuenta creada! Ahora puedes iniciar sesión.';
-    nombre.value = ''; email.value = ''; password.value = '';
-    setTimeout(() => { modo.value = 'login'; limpiar(); }, 2000);
-  } catch {
-    errorMsg.value = 'No se pudo conectar al servidor.';
+    
+    // Cambiamos a la vista para ingresar el token
+    cambiarVista('reset');
+    mostrarMensaje('Token generado. Revisa la consola del backend.', 'success');
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
+  } finally {
+    cargando.value = false;
+  }
+};
+
+const cambiarPassword = async () => {
+  cargando.value = true;
+  mensajeG.value = null;
+  try {
+    const response = await fetch(`${API}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formularioReset.value)
+    });
+    const data = await response.json();
+    
+    if (!response.ok) {
+      if (data.errores) throw new Error(data.errores[0].msg);
+      throw new Error(data.error || 'Error al cambiar contraseña');
+    }
+    
+    // Si sale bien, volvemos al login limpiando todo
+    formularioReset.value = { token: '', nuevaPassword: '' };
+    formularioLogin.value.password = '';
+    cambiarVista('login');
+    mostrarMensaje('¡Contraseña actualizada! Ya puedes iniciar sesión.', 'success');
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
   } finally {
     cargando.value = false;
   }

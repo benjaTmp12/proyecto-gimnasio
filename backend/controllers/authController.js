@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto'); 
 const { Usuario } = require('../models');
 
 // GEN-04: 
@@ -60,4 +61,63 @@ const loginUsuario = async (req, res) => {
     }
 };
 
-module.exports = { registrarUsuario, loginUsuario };
+// GEN-07: Solicitar token de recuperación
+const solicitarResetPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const usuario = await Usuario.findOne({ where: { email } });
+
+        if (!usuario) {
+            // Por seguridad, siempre devolvemos OK para no revelar si el correo existe en la base de datos
+            return res.status(200).json({ mensaje: 'Si el correo existe, se enviará un token.' });
+        }
+
+        // Generar un token aleatorio y darle 1 hora de vida
+        const resetToken = crypto.randomBytes(20).toString('hex');
+        usuario.resetToken = resetToken;
+        usuario.resetTokenExpires = Date.now() + 3600000; // 1 hora en milisegundos
+        await usuario.save();
+
+        // Mostrar token en consola (permitido en modo dev según requerimientos)
+        console.log('\n=============================================');
+        console.log(`🔑 TOKEN DE RECUPERACIÓN PARA ${email}:`);
+        console.log(resetToken);
+        console.log('=============================================\n');
+
+        res.status(200).json({ mensaje: 'Token generado (Revisar consola del servidor)' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al solicitar reseteo' });
+    }
+};
+
+// GEN-07: Validar token y cambiar contraseña
+const resetearPassword = async (req, res) => {
+    try {
+        const { token, nuevaPassword } = req.body;
+
+        const usuario = await Usuario.findOne({ where: { resetToken: token } });
+
+        // Validar que el usuario exista con ese token y que la fecha no haya expirado
+        if (!usuario || usuario.resetTokenExpires < new Date()) {
+            return res.status(400).json({ error: 'El token es inválido o ha expirado.' });
+        }
+
+        // Encriptar la nueva contraseña
+        const salt = await bcrypt.genSalt(10);
+        usuario.password = await bcrypt.hash(nuevaPassword, salt);
+        
+        // Limpiar los campos del token en la base de datos
+        usuario.resetToken = null;
+        usuario.resetTokenExpires = null;
+        await usuario.save();
+
+        res.status(200).json({ mensaje: 'Contraseña actualizada correctamente.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al cambiar la contraseña' });
+    }
+};
+
+// Exportamos todas las funciones juntas al estilo de tu código
+module.exports = { registrarUsuario, loginUsuario, solicitarResetPassword, resetearPassword };
