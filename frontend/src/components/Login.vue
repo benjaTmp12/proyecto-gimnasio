@@ -110,7 +110,6 @@ const handleLogin = async () => {
     });
     const data = await res.json();
     if (!res.ok) {
-      // Muestra error específico del server (400, 401, 409, 422)
       errorMsg.value = data.error || data.errores?.[0]?.msg || 'Credenciales incorrectas.';
       return;
     }
@@ -133,7 +132,6 @@ const handleRegistro = async () => {
     });
     const data = await res.json();
     if (!res.ok) {
-      // Errores 400 (validación), 409 (email duplicado)
       if (data.errores) {
         errorMsg.value = data.errores.map(e => e.msg).join(' · ');
       } else {

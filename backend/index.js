@@ -6,6 +6,8 @@ const authRoutes = require('./routes/authRoutes');
 const socioRoutes = require('./routes/socioRoutes'); 
 const membresiaRoutes = require('./routes/membresiaRoutes');
 const usuarioRoutes = require('./routes/usuarioRoutes');
+const claseRoutes = require('./routes/claseRoutes');
+const inscripcionRoutes = require('./routes/inscripcionRoutes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -24,6 +26,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/socios', socioRoutes); 
 app.use('/api/membresias', membresiaRoutes);
 app.use('/api/usuarios', usuarioRoutes);
+app.use('/api/clases', claseRoutes);
+app.use('/api/inscripciones', inscripcionRoutes);
 
 app.listen(PORT, async () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);
