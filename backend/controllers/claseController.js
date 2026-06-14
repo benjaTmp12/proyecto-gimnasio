@@ -1,24 +1,27 @@
 const { Clase } = require('../models');
 
-exports.obtenerClases = async (req, res) => {
+// 1. Leer todas las clases
+const obtenerClases = async (req, res, next) => {
     try {
         const clases = await Clase.findAll();
         res.json(clases);
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener las clases' });
+        next(error); // GEN-08
     }
 };
 
-exports.crearClase = async (req, res) => {
+// 2. Crear clase
+const crearClase = async (req, res, next) => {
     try {
         const nuevaClase = await Clase.create(req.body);
         res.status(201).json(nuevaClase);
     } catch (error) {
-        res.status(400).json({ error: 'Error al crear la clase' });
+        next(error); // GEN-08
     }
 };
 
-exports.actualizarClase = async (req, res) => {
+// 3. Actualizar clase
+const actualizarClase = async (req, res, next) => {
     try {
         const { id } = req.params;
         const clase = await Clase.findByPk(id);
@@ -27,14 +30,15 @@ exports.actualizarClase = async (req, res) => {
             await clase.update(req.body);
             res.json(clase);
         } else {
-            res.status(404).json({ error: 'Clase no encontrada' });
+            res.status(404).json({ error: true, message: 'Clase no encontrada' });
         }
     } catch (error) {
-        res.status(400).json({ error: 'Error al actualizar la clase' });
+        next(error); // GEN-08
     }
 };
 
-exports.eliminarClase = async (req, res) => {
+// 4. Eliminar clase
+const eliminarClase = async (req, res, next) => {
     try {
         const { id } = req.params;
         const eliminado = await Clase.destroy({ where: { id } });
@@ -42,9 +46,50 @@ exports.eliminarClase = async (req, res) => {
         if (eliminado) {
             res.json({ mensaje: 'Clase eliminada' });
         } else {
-            res.status(404).json({ error: 'Clase no encontrada' });
+            res.status(404).json({ error: true, message: 'Clase no encontrada' });
         }
     } catch (error) {
-        res.status(500).json({ error: 'Error al eliminar la clase' });
+        next(error); // GEN-08
     }
 };
+
+
+// rq-10: REPORTE AVANZADO DE OCUPACIÓN
+
+const reporteOcupacion = async (req, res, next) => {
+    try {
+        const clases = await Clase.findAll();
+        
+        // Analizamos la data para generar un estado de ocupación
+        const detalle = clases.map(clase => {
+            let estado = 'Disponible';
+            if (clase.cupos === 0) estado = 'Agotada';
+            else if (clase.cupos <= 3) estado = 'Crítica (Por llenarse)';
+
+            return {
+                clase: clase.nombre,
+                instructor: clase.instructor,
+                horario: clase.horario,
+                cuposSobrantes: clase.cupos,
+                estadoDeAlerta: estado
+            };
+        });
+
+        const totalCuposDisponibles = clases.reduce((acc, c) => acc + c.cupos, 0);
+        const clasesAgotadas = detalle.filter(d => d.estadoDeAlerta === 'Agotada').length;
+
+        res.json({
+            mensaje: 'Reporte generado con éxito',
+            resumen: {
+                totalClases: clases.length,
+                cuposGlobalesDisponibles: totalCuposDisponibles,
+                clasesAgotadas: clasesAgotadas
+            },
+            detalle: detalle
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { obtenerClases, crearClase, actualizarClase, eliminarClase, reporteOcupacion };

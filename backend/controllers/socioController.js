@@ -1,30 +1,41 @@
+const { Op } = require('sequelize'); 
 const { Socio } = require('../models'); 
 
-// 1. Leer todos los socios (GET)
-const obtenerSocios = async (req, res) => {
+// 1. Leer todos los socios con filtro opcional (GET)
+const obtenerSocios = async (req, res, next) => {
     try {
-        const socios = await Socio.findAll();
+        const { activos } = req.query; 
+        let condiciones = {};
+
+        // rq-07: Si piden solo los activos, filtramos fechaVencimiento >= hoy
+        if (activos === 'true') {
+            const hoy = new Date().toISOString().split('T')[0];
+            condiciones = {
+                fechaVencimiento: {
+                    [Op.gte]: hoy
+                }
+            };
+        }
+
+        const socios = await Socio.findAll({ where: condiciones });
         res.json(socios);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error al obtener los socios' });
+        next(error); // GEN-08: Enviamos el error al manejador central
     }
 };
 
 // 2. Crear un nuevo socio (POST)
-const crearSocio = async (req, res) => {
+const crearSocio = async (req, res, next) => {
     try {
-        
         const nuevoSocio = await Socio.create(req.body);
         res.status(201).json({ mensaje: 'Socio creado exitosamente', socio: nuevoSocio });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error al crear el socio' });
+        next(error);
     }
 };
 
 // 3. Actualizar un socio (PUT)
-const actualizarSocio = async (req, res) => {
+const actualizarSocio = async (req, res, next) => {
     try {
         const { id } = req.params;
         const socio = await Socio.findByPk(id);
@@ -36,13 +47,12 @@ const actualizarSocio = async (req, res) => {
         await socio.update(req.body);
         res.json({ mensaje: 'Socio actualizado', socio });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error al actualizar el socio' });
+        next(error);
     }
 };
 
 // 4. Eliminar un socio (DELETE)
-const eliminarSocio = async (req, res) => {
+const eliminarSocio = async (req, res, next) => {
     try {
         const { id } = req.params;
         const socio = await Socio.findByPk(id);
@@ -54,8 +64,7 @@ const eliminarSocio = async (req, res) => {
         await socio.destroy();
         res.json({ mensaje: 'Socio eliminado correctamente' });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error al eliminar el socio' });
+        next(error);
     }
 };
 

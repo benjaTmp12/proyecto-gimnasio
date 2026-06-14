@@ -28,6 +28,15 @@ app.use('/api/membresias', membresiaRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/clases', claseRoutes);
 app.use('/api/inscripciones', inscripcionRoutes);
+const errorHandler = require('./middlewares/errorHandler');
+
+
+app.use((req, res, next) => {
+    res.status(404).json({ error: true, message: 'La ruta solicitada no existe en la API' });
+});
+
+app.use(errorHandler);
+
 
 app.listen(PORT, async () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);

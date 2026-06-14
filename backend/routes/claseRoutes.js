@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { obtenerClases, crearClase, actualizarClase, eliminarClase } = require('../controllers/claseController');
+const { obtenerClases, crearClase, actualizarClase, eliminarClase, reporteOcupacion } = require('../controllers/claseController');
 const { verificarToken } = require('../middlewares/authMiddleware');
 
-// Proteger todas las rutas de clases
 router.use(verificarToken);
+
+// rq-10: Ruta del reporte 
+router.get('/reporte-ocupacion', reporteOcupacion);
 
 router.get('/', obtenerClases);
 router.post('/', crearClase);
