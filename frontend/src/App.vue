@@ -1,24 +1,22 @@
 <template>
-  <div class="min-h-screen bg-gray-100 font-sans">
+  <div class="min-h-screen bg-gray-100 font-sans text-gray-800">
     <Login v-if="!token" @login-success="manejarLogin" />
     
     <div v-else>
-      <!-- Navbar Central -->
-      <nav class="bg-gray-900 text-white p-4 shadow-lg flex flex-wrap gap-2 items-center px-6">
-        <div class="font-bold text-xl mr-6 tracking-wide">Gym<span class="text-blue-500">OS</span></div>
+      <nav class="bg-white shadow px-6 py-4 flex flex-wrap gap-4 items-center mb-6">
+        <div class="font-black text-2xl mr-6 text-blue-600 tracking-tight">GymOS</div>
         
-        <button @click="vista = 'dashboard'" :class="['px-4 py-2 rounded transition', vista === 'dashboard' ? 'bg-blue-600' : 'hover:bg-gray-800']">📊 Dashboard</button>
-        <button @click="vista = 'socios'" :class="['px-4 py-2 rounded transition', vista === 'socios' ? 'bg-blue-600' : 'hover:bg-gray-800']">👥 Socios</button>
-        <button @click="vista = 'membresias'" :class="['px-4 py-2 rounded transition', vista === 'membresias' ? 'bg-blue-600' : 'hover:bg-gray-800']">🏷️ Membresías</button>
-        <button @click="vista = 'clases'" :class="['px-4 py-2 rounded transition', vista === 'clases' ? 'bg-blue-600' : 'hover:bg-gray-800']">🏋️ Clases</button>
+        <button @click="vista = 'dashboard'" :class="['px-4 py-2 rounded font-semibold transition', vista === 'dashboard' ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800']">Dashboard</button>
+        <button @click="vista = 'socios'" :class="['px-4 py-2 rounded font-semibold transition', vista === 'socios' ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800']">Socios</button>
+        <button @click="vista = 'membresias'" :class="['px-4 py-2 rounded font-semibold transition', vista === 'membresias' ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800']">Membresías</button>
+        <button @click="vista = 'clases'" :class="['px-4 py-2 rounded font-semibold transition', vista === 'clases' ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800']">Clases</button>
         
-        <button @click="manejarLogout" class="ml-auto text-red-400 font-bold px-4 py-2 hover:bg-gray-800 rounded transition border border-red-900">
+        <button @click="manejarLogout" class="ml-auto text-red-500 font-bold px-4 py-2 hover:bg-red-50 rounded transition">
           Cerrar sesión
         </button>
       </nav>
 
-      <!-- Vistas Dinámicas -->
-      <main class="max-w-7xl mx-auto mt-6">
+      <main class="max-w-7xl mx-auto px-4 pb-10">
         <Dashboard v-if="vista === 'dashboard'" :token="token" />
         <PanelSocios v-if="vista === 'socios'" :token="token" />
         <PanelMembresias v-if="vista === 'membresias'" :token="token" />
@@ -37,7 +35,7 @@ import PanelMembresias from './components/PanelMembresias.vue';
 import PanelClases from './components/PanelClases.vue';
 
 const token = ref(localStorage.getItem('token') || '');
-const vista = ref('dashboard'); // Pantalla inicial por defecto
+const vista = ref('dashboard'); 
 
 const manejarLogin = (nuevoToken) => {
   token.value = nuevoToken;
