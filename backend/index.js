@@ -8,7 +8,6 @@ const membresiaRoutes = require('./routes/membresiaRoutes');
 const usuarioRoutes = require('./routes/usuarioRoutes');
 const claseRoutes = require('./routes/claseRoutes');
 const inscripcionRoutes = require('./routes/inscripcionRoutes');
-const { getResumenDashboard } = require('./controllers/dashboardController');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -29,7 +28,6 @@ app.use('/api/membresias', membresiaRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/clases', claseRoutes);
 app.use('/api/inscripciones', inscripcionRoutes);
-app.get('/api/dashboard', getResumenDashboard);
 const errorHandler = require('./middlewares/errorHandler');
 
 

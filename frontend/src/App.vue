@@ -1,4 +1,5 @@
 <template>
+<<<<<<< HEAD
   <div class="min-h-screen bg-gray-100 font-sans text-gray-800">
     <Login v-if="!token" @login-success="manejarLogin" />
     
@@ -23,19 +24,25 @@
         <PanelClases v-if="vista === 'clases'" :token="token" />
       </main>
     </div>
+=======
+  <div class="min-h-screen bg-gray-100 p-4">
+    <Login v-if="!token" @login-success="manejarLogin" />
+    
+    <PanelSocios v-else :token="token" @logout="manejarLogout" />
+>>>>>>> parent of c3de7bb (siu)
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue';
 import Login from './components/Login.vue';
-import Dashboard from './components/Dashboard.vue';
 import PanelSocios from './components/PanelSocios.vue';
-import PanelMembresias from './components/PanelMembresias.vue';
-import PanelClases from './components/PanelClases.vue';
 
 const token = ref(localStorage.getItem('token') || '');
+<<<<<<< HEAD
 const vista = ref('dashboard'); 
+=======
+>>>>>>> parent of c3de7bb (siu)
 
 const manejarLogin = (nuevoToken) => {
   token.value = nuevoToken;
