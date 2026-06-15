@@ -1,0 +1,281 @@
+{
+  "info": {
+    "name": "GymOS API",
+    "_postman_id": "gymOS-collection-v1",
+    "description": "Colección completa de la API del Sistema de Gestión de Gimnasio. Cubre GEN-11: auth, CRUD y casos de error (401, 409, 422).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api", "type": "string" },
+    { "key": "token", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Registrar usuario",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/registro",
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Admin Test\",\n  \"email\": \"admin@gym.com\",\n  \"password\": \"123456\"\n}" },
+            "description": "GEN-04: Registro de nuevo usuario. Devuelve 201 si OK, 409 si email duplicado, 400 si datos inválidos."
+          }
+        },
+        {
+          "name": "Registrar - Error 409 email duplicado",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/registro",
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Admin Test\",\n  \"email\": \"admin@gym.com\",\n  \"password\": \"123456\"\n}" },
+            "description": "GEN-10/GEN-11: Debe retornar 409 porque el email ya existe."
+          }
+        },
+        {
+          "name": "Registrar - Error 400 datos inválidos",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/registro",
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"\",\n  \"email\": \"no-es-un-email\",\n  \"password\": \"123\"\n}" },
+            "description": "GEN-10/GEN-11: Debe retornar 400 con errores de validación."
+          }
+        },
+        {
+          "name": "Login exitoso",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "  console.log('Token guardado:', json.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@gym.com\",\n  \"password\": \"123456\"\n}" },
+            "description": "GEN-05: Login. Guarda automáticamente el token en la variable de colección."
+          }
+        },
+        {
+          "name": "Login - Error 401 credenciales inválidas",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@gym.com\",\n  \"password\": \"password_incorrecto\"\n}" },
+            "description": "GEN-11: Debe retornar 401."
+          }
+        },
+        {
+          "name": "Solicitar reset password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/forgot-password",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@gym.com\"\n}" },
+            "description": "GEN-07: El token aparece en la consola del servidor."
+          }
+        },
+        {
+          "name": "Resetear password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/reset-password",
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"PEGA_EL_TOKEN_DE_LA_CONSOLA_AQUI\",\n  \"nuevaPassword\": \"nueva123\"\n}" },
+            "description": "GEN-07: Usa el token de la consola del servidor."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Socios",
+      "item": [
+        {
+          "name": "Obtener todos los socios",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/socios",
+            "description": "rq-01, GEN-09: Lista todos los socios."
+          }
+        },
+        {
+          "name": "Filtrar socios activos (rq-07)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/socios?activos=true", "query": [{ "key": "activos", "value": "true" }] },
+            "description": "rq-07: Devuelve socios con fechaVencimiento >= hoy."
+          }
+        },
+        {
+          "name": "Crear socio",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/socios",
+            "body": { "mode": "raw", "raw": "{\n  \"rut\": \"12345678-9\",\n  \"nombre\": \"Juan\",\n  \"apellido\": \"Pérez\",\n  \"email\": \"juan@test.com\",\n  \"fechaVencimiento\": \"2027-12-31\"\n}" },
+            "description": "rq-01, GEN-09: Crea un socio nuevo."
+          }
+        },
+        {
+          "name": "Actualizar socio",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/socios/1",
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Juan Actualizado\",\n  \"fechaVencimiento\": \"2028-01-01\"\n}" }
+          }
+        },
+        {
+          "name": "Eliminar socio",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/socios/1"
+          }
+        },
+        {
+          "name": "Error 401 - sin token",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/socios",
+            "description": "GEN-06/GEN-11: Sin Authorization header debe retornar 401."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Membresías",
+      "item": [
+        {
+          "name": "Obtener membresías",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/membresias"
+          }
+        },
+        {
+          "name": "Crear membresía",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/membresias",
+            "body": { "mode": "raw", "raw": "{\n  \"tipo\": \"Plan Mensual\",\n  \"precio\": 25000,\n  \"duracionDias\": 30\n}" }
+          }
+        },
+        {
+          "name": "Actualizar membresía",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/membresias/1",
+            "body": { "mode": "raw", "raw": "{\n  \"precio\": 28000\n}" }
+          }
+        },
+        {
+          "name": "Eliminar membresía",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/membresias/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clases",
+      "item": [
+        {
+          "name": "Obtener clases",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/clases"
+          }
+        },
+        {
+          "name": "Crear clase",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/clases",
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Spinning\",\n  \"instructor\": \"Juan Pérez\",\n  \"horario\": \"08:00\",\n  \"cupos\": 15\n}" }
+          }
+        },
+        {
+          "name": "Reporte de ocupación (rq-10)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/clases/reporte-ocupacion",
+            "description": "rq-10: Devuelve estado de cupos y alertas por clase."
+          }
+        },
+        {
+          "name": "Actualizar clase",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/clases/1",
+            "body": { "mode": "raw", "raw": "{\n  \"cupos\": 20\n}" }
+          }
+        },
+        {
+          "name": "Eliminar clase",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/clases/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inscripciones",
+      "item": [
+        {
+          "name": "Inscribir socio a clase (rq-09)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": { "mode": "raw", "raw": "{\n  \"socioId\": 1,\n  \"claseId\": 1\n}" },
+            "description": "rq-09: Inscribe un socio. Valida membresía vigente (rq-05)."
+          }
+        },
+        {
+          "name": "Error 409 - membresía vencida (rq-05)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": { "mode": "raw", "raw": "{\n  \"socioId\": 99,\n  \"claseId\": 1\n}" },
+            "description": "rq-05/GEN-11: Socio con membresía vencida o sin pago → debe retornar 409."
+          }
+        },
+        {
+          "name": "Obtener inscripciones",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/inscripciones"
+          }
+        }
+      ]
+    }
+  ]
+}
