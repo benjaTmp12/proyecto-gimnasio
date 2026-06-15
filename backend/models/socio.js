@@ -22,6 +22,14 @@ module.exports = (sequelize, DataTypes) => {
     fechaVencimiento: {
       type: DataTypes.DATEONLY,
       allowNull: true
+    },
+    plan_nombre: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    plan_precio: {
+      type: DataTypes.INTEGER,
+      allowNull: true
     }
   }, {
     sequelize,
