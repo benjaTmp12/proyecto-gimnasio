@@ -1,71 +1,53 @@
-const { Op } = require('sequelize'); 
-const { Socio } = require('../models'); 
+const { Socio } = require('../models');
 
-// 1. Leer todos los socios con filtro opcional (GET)
-const obtenerSocios = async (req, res, next) => {
-    try {
-        const { activos } = req.query; 
-        let condiciones = {};
-
-        // rq-07: Si piden solo los activos, filtramos fechaVencimiento >= hoy
-        if (activos === 'true') {
-            const hoy = new Date().toISOString().split('T')[0];
-            condiciones = {
-                fechaVencimiento: {
-                    [Op.gte]: hoy
-                }
-            };
-        }
-
-        const socios = await Socio.findAll({ where: condiciones });
-        res.json(socios);
-    } catch (error) {
-        next(error); // GEN-08: Enviamos el error al manejador central
-    }
+exports.obtenerSocios = async (req, res) => {
+  try {
+    const socios = await Socio.findAll();
+    res.json(socios);
+  } catch (error) {
+    res.status(500).json({ mensaje: 'Error al obtener socios', error });
+  }
 };
 
-// 2. Crear un nuevo socio (POST)
-const crearSocio = async (req, res, next) => {
-    try {
-        const nuevoSocio = await Socio.create(req.body);
-        res.status(201).json({ mensaje: 'Socio creado exitosamente', socio: nuevoSocio });
-    } catch (error) {
-        next(error);
-    }
+exports.crearSocio = async (req, res) => {
+  try {
+    // AQUÍ AHORA SÍ ESTAMOS RECIBIENDO EL PLAN Y EL PRECIO
+    const { rut, nombre, apellido, email, fechaVencimiento, plan_nombre, plan_precio } = req.body;
+    const socio = await Socio.create({ rut, nombre, apellido, email, fechaVencimiento, plan_nombre, plan_precio });
+    res.status(201).json(socio);
+  } catch (error) {
+    res.status(400).json({ mensaje: 'Error al crear socio', error });
+  }
 };
 
-// 3. Actualizar un socio (PUT)
-const actualizarSocio = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const socio = await Socio.findByPk(id);
-        
-        if (!socio) {
-            return res.status(404).json({ error: 'Socio no encontrado' });
-        }
-
-        await socio.update(req.body);
-        res.json({ mensaje: 'Socio actualizado', socio });
-    } catch (error) {
-        next(error);
+exports.actualizarSocio = async (req, res) => {
+  try {
+    const { id } = req.params;
+    // AQUÍ TAMBIÉN LOS RECIBIMOS PARA PODER EDITARLOS
+    const { rut, nombre, apellido, email, fechaVencimiento, plan_nombre, plan_precio } = req.body;
+    const socio = await Socio.findByPk(id);
+    if (socio) {
+      await socio.update({ rut, nombre, apellido, email, fechaVencimiento, plan_nombre, plan_precio });
+      res.json(socio);
+    } else {
+      res.status(404).json({ mensaje: 'Socio no encontrado' });
     }
+  } catch (error) {
+    res.status(400).json({ mensaje: 'Error al actualizar socio', error });
+  }
 };
 
-// 4. Eliminar un socio (DELETE)
-const eliminarSocio = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const socio = await Socio.findByPk(id);
-
-        if (!socio) {
-            return res.status(404).json({ error: 'Socio no encontrado' });
-        }
-
-        await socio.destroy();
-        res.json({ mensaje: 'Socio eliminado correctamente' });
-    } catch (error) {
-        next(error);
+exports.eliminarSocio = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const socio = await Socio.findByPk(id);
+    if (socio) {
+      await socio.destroy();
+      res.json({ mensaje: 'Socio eliminado' });
+    } else {
+      res.status(404).json({ mensaje: 'Socio no encontrado' });
     }
+  } catch (error) {
+    res.status(500).json({ mensaje: 'Error al eliminar socio', error });
+  }
 };
-
-module.exports = { obtenerSocios, crearSocio, actualizarSocio, eliminarSocio };
