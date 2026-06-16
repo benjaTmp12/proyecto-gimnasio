@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen bg-slate-950 text-slate-100" style="font-family: 'Inter', system-ui, sans-serif;">
+  <div class="bg-slate-950 text-slate-100 min-h-screen" style="font-family: 'Inter', system-ui, sans-serif;">
 
-    <!-- Toast de Notificaciones -->
+    <!-- Toast de notificación -->
     <Transition name="toast">
       <div v-if="toast.visible" :class="[
         'fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl text-sm font-semibold border',
@@ -12,7 +12,7 @@
       </div>
     </Transition>
 
-    <!-- Modal confirmar eliminación -->
+    <!-- Modal de confirmación de eliminación -->
     <Transition name="modal">
       <div v-if="modal.visible" class="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-7 max-w-sm w-full mx-4">
@@ -27,20 +27,40 @@
       </div>
     </Transition>
 
-    <!-- Modal Inscribir Socio a Clase -->
+    <!-- Modal de inscripción a clase -->
     <Transition name="modal">
       <div v-if="modalInscripcion.visible" class="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-7 max-w-md w-full mx-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-7 max-w-lg w-full mx-4">
           <h3 class="text-lg font-bold text-white mb-2">🏋️ Inscribir Socio a Clase</h3>
-          <p class="text-slate-400 text-sm mb-6">Selecciona el socio que asistirá a esta clase. Se validará su membresía automáticamente.</p>
+          <p class="text-slate-400 text-sm mb-4">Revisa la información de la sesión y selecciona un socio activo.</p>
           
-          <select v-model="modalInscripcion.socioId" class="w-full bg-slate-800 border border-slate-700 text-slate-100 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none mb-6 text-sm">
-            <option value="" disabled>-- Selecciona un socio --</option>
-            <option v-for="s in socios" :key="s.id" :value="s.id">
-              {{ s.nombre }} {{ s.apellido }} (RUT: {{ s.rut }})
-            </option>
-          </select>
+          <div v-if="claseInscripcion" class="bg-slate-800/80 border border-slate-700 rounded-xl p-4 mb-6">
+            <h4 class="text-emerald-400 font-bold text-lg mb-3">{{ claseInscripcion.nombre }}</h4>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p class="text-[10px] font-bold text-slate-500 uppercase">Entrenador</p>
+                <p class="text-slate-200">{{ claseInscripcion.instructor }}</p>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold text-slate-500 uppercase">Horario</p>
+                <p class="text-slate-200">{{ claseInscripcion.horario }}</p>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold text-slate-500 uppercase">Duración</p>
+                <p class="text-slate-200">60 minutos</p>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold text-slate-500 uppercase">Ocupación</p>
+                <p class="text-slate-200"><span class="text-amber-400 font-bold">{{ claseInscripcion.cupos }}</span> disponibles / {{ claseInscripcion.capacidadMax }} máx.</p>
+              </div>
+            </div>
+          </div>
 
+          <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Seleccionar Socio</label>
+          <select v-model="modalInscripcion.socioId" class="w-full bg-slate-800 border border-slate-700 text-slate-100 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none mb-6 text-sm">
+            <option value="" disabled>-- Selecciona un socio activo --</option>
+            <option v-for="s in sociosActivos" :key="s.id" :value="s.id">{{ s.nombre }} {{ s.apellido }} (RUT: {{ s.rut }})</option>
+          </select>
           <div class="flex gap-3">
             <button @click="modalInscripcion.visible = false" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg font-semibold transition-colors">Cancelar</button>
             <button @click="procesarInscripcion" :disabled="!modalInscripcion.socioId || cargando" class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white py-2 rounded-lg font-semibold transition-colors">
@@ -61,16 +81,20 @@
         </div>
       </div>
       <div class="flex items-center gap-3">
+        <span v-if="rolUsuario === 'admin'" class="hidden sm:flex items-center gap-1 bg-amber-950/60 border border-amber-800 text-amber-400 text-xs font-bold px-2.5 py-1 rounded-full">
+          👑 Admin
+        </span>
         <span class="text-xs text-slate-500 hidden sm:block">{{ usuarioActual }}</span>
-        <button @click="$emit('logout')" class="flex items-center gap-2 bg-slate-800 hover:bg-red-950 border border-slate-700 hover:border-red-800 text-slate-300 hover:text-red-300 px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+        <button @click="cerrarSesion" class="flex items-center gap-2 bg-slate-800 hover:bg-red-950 border border-slate-700 hover:border-red-800 text-slate-300 hover:text-red-300 px-4 py-2 rounded-lg text-sm font-semibold transition-all">
           Cerrar sesión
         </button>
       </div>
     </header>
 
+    <!-- Contenido principal -->
     <div class="max-w-6xl mx-auto px-4 py-8">
 
-      <!-- Tabs -->
+      <!-- Navegación de tabs -->
       <nav class="flex gap-1.5 mb-8 bg-slate-900 p-1.5 rounded-xl border border-slate-800 w-fit overflow-x-auto">
         <button v-for="tab in tabs" :key="tab.id"
           @click="tabActual = tab.id"
@@ -80,300 +104,12 @@
         </button>
       </nav>
 
-      <!-- ===== DASHBOARD ===== -->
-      <section v-if="tabActual === 'dashboard'" class="space-y-5">
-
-        <!-- Alerta socios vencidos -->
-        <div v-if="sociosVencidos.length > 0" class="flex items-center gap-3 bg-amber-950/60 border border-amber-800 rounded-xl px-4 py-3">
-          <span class="text-amber-400 text-lg">⚠️</span>
-          <p class="text-amber-300 text-sm font-semibold">
-            {{ sociosVencidos.length }} socio{{ sociosVencidos.length > 1 ? 's tienen' : ' tiene' }} membresía vencida o por vencer esta semana
-          </p>
-          <button @click="tabActual = 'socios'" class="ml-auto text-xs text-amber-400 hover:text-amber-300 font-bold transition-colors whitespace-nowrap">Ver socios →</button>
-        </div>
-
-        <!-- KPIs -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col gap-3">
-            <div class="w-8 h-8 rounded-lg bg-blue-950 flex items-center justify-center text-blue-400 text-base">👥</div>
-            <p class="text-3xl font-black text-blue-400">{{ socios.length }}</p>
-            <div>
-              <p class="text-xs text-slate-400 font-semibold">Total socios</p>
-              <p class="text-xs text-slate-600 mt-0.5">{{ sociosActivos.length }} activos</p>
-            </div>
-          </div>
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col gap-3">
-            <div class="w-8 h-8 rounded-lg bg-emerald-950 flex items-center justify-center text-emerald-400 text-base">✅</div>
-            <p class="text-3xl font-black text-emerald-400">{{ sociosActivos.length }}</p>
-            <div>
-              <p class="text-xs text-slate-400 font-semibold">Socios activos</p>
-              <p class="text-xs text-slate-600 mt-0.5">{{ socios.length > 0 ? Math.round(sociosActivos.length / socios.length * 100) : 0 }}% del total</p>
-            </div>
-          </div>
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col gap-3">
-            <div class="w-8 h-8 rounded-lg bg-violet-950 flex items-center justify-center text-violet-400 text-base">🏋️</div>
-            <p class="text-3xl font-black text-violet-400">{{ clases.length }}</p>
-            <div>
-              <p class="text-xs text-slate-400 font-semibold">Clases activas</p>
-              <p class="text-xs text-slate-600 mt-0.5">{{ cuposTotales }} cupos disponibles</p>
-            </div>
-          </div>
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col gap-3">
-            <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 text-base">🏷️</div>
-            <p class="text-3xl font-black text-slate-300">{{ membresias.length }}</p>
-            <div>
-              <p class="text-xs text-slate-400 font-semibold">Tipos de plan</p>
-              <p class="text-xs text-slate-600 mt-0.5">desde ${{ precioMinimo.toLocaleString('es-CL') }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Últimos socios + Ocupación de clases -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-          <!-- Últimos socios -->
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-            <div class="flex justify-between items-center mb-5">
-              <h3 class="text-sm font-bold text-white">Últimos registros</h3>
-              <button @click="tabActual = 'socios'" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">Ver todos →</button>
-            </div>
-            <ul class="space-y-1">
-              <li v-for="socio in ultimosSocios" :key="socio.id" class="flex items-center gap-3 py-2.5 border-b border-slate-800 last:border-0">
-                <div class="w-9 h-9 rounded-full bg-indigo-950 border border-indigo-800 flex items-center justify-center text-xs font-black text-indigo-300 shrink-0">
-                  {{ socio.nombre[0] }}{{ socio.apellido[0] }}
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="font-semibold text-slate-100 text-sm truncate">{{ socio.nombre }} {{ socio.apellido }}</p>
-                  <p class="text-xs text-slate-500 font-mono">{{ socio.rut }}</p>
-                </div>
-                <span :class="estaActivo(socio)
-                  ? 'bg-emerald-950/70 text-emerald-400 border-emerald-900'
-                  : 'bg-slate-800 text-slate-500 border-slate-700'"
-                  class="text-xs font-bold px-2.5 py-1 rounded-full border shrink-0">
-                  {{ estaActivo(socio) ? 'Activo' : 'Vencido' }}
-                </span>
-              </li>
-              <li v-if="ultimosSocios.length === 0" class="py-8 text-center text-slate-600 text-sm">Sin socios registrados aún.</li>
-            </ul>
-          </div>
-
-          <!-- Ocupación de clases -->
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-            <div class="flex justify-between items-center mb-5">
-              <h3 class="text-sm font-bold text-white">Ocupación de clases</h3>
-              <button @click="tabActual = 'clases'" class="text-xs text-violet-400 hover:text-violet-300 font-semibold transition-colors">Ver todas →</button>
-            </div>
-            <ul class="space-y-1">
-              <li v-for="clase in clases.slice(0, 5)" :key="clase.id" class="py-2.5 border-b border-slate-800 last:border-0">
-                <div class="flex justify-between items-center mb-1.5">
-                  <div>
-                    <p class="text-sm font-semibold text-slate-100">{{ clase.nombre }}</p>
-                    <p class="text-xs text-slate-500">{{ clase.instructor }}</p>
-                  </div>
-                  <span :class="ocupacionColor(clase)"
-                    class="text-xs font-bold px-2.5 py-1 rounded-full border shrink-0 ml-2">
-                    {{ clase.cupos }} cupos
-                  </span>
-                </div>
-                <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                  <div class="h-full rounded-full transition-all"
-                    :class="ocupacionBarColor(clase)"
-                    :style="{ width: ocupacionPorcentaje(clase) + '%' }">
-                  </div>
-                </div>
-              </li>
-              <li v-if="clases.length === 0" class="py-8 text-center text-slate-600 text-sm">No hay clases programadas.</li>
-            </ul>
-          </div>
-
-        </div>
-
-        <!-- Planes disponibles -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-          <div class="flex justify-between items-center mb-5">
-            <h3 class="text-sm font-bold text-white">Planes disponibles</h3>
-            <button @click="tabActual = 'membresias'" class="text-xs text-emerald-400 hover:text-emerald-300 font-semibold transition-colors">Gestionar →</button>
-          </div>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div v-for="plan in membresias" :key="plan.id"
-              class="bg-slate-800 border border-slate-700 rounded-xl p-4 flex flex-col gap-1 hover:border-slate-500 transition-colors">
-              <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider truncate">{{ plan.tipo }}</p>
-              <p class="text-xl font-black text-emerald-400">${{ plan.precio.toLocaleString('es-CL') }}</p>
-              <p class="text-xs text-slate-600">{{ plan.duracionDias }} días</p>
-            </div>
-            <div v-if="membresias.length === 0" class="col-span-4 py-6 text-center text-slate-600 text-sm">Sin planes creados aún.</div>
-          </div>
-        </div>
-
-      </section>
-
-      <!-- ===== SOCIOS ===== -->
-      <section v-if="tabActual === 'socios'" class="space-y-5">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-          <h3 class="font-bold text-white mb-4 text-sm">{{ socioEditandoId ? '✏️ Actualizar socio' : '➕ Agregar socio' }}</h3>
-          <form @submit.prevent="socioEditandoId ? actualizarSocio() : crearSocio()" class="grid grid-cols-1 md:grid-cols-6 gap-3">
-            <div class="flex flex-col gap-1">
-              <input v-model="formularioSocio.rut" @blur="validarRut" placeholder="RUT (ej: 12.345.678-9)"
-                :class="errorRut ? 'border-red-600 focus:ring-red-500' : 'border-slate-700 focus:ring-indigo-500'"
-                class="bg-slate-800 border text-slate-100 p-2.5 rounded-lg focus:ring-2 outline-none placeholder-slate-600 text-sm" required>
-              <span v-if="errorRut" class="text-red-400 text-xs">{{ errorRut }}</span>
-            </div>
-            <input v-model="formularioSocio.nombre" placeholder="Nombre" class="bg-slate-800 border border-slate-700 text-slate-100 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none placeholder-slate-600 text-sm" required>
-            <input v-model="formularioSocio.apellido" placeholder="Apellido" class="bg-slate-800 border border-slate-700 text-slate-100 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none placeholder-slate-600 text-sm" required>
-            <input v-model="formularioSocio.email" type="email" placeholder="Email" class="bg-slate-800 border border-slate-700 text-slate-100 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none placeholder-slate-600 text-sm" required>
-            <input v-model="formularioSocio.fechaVencimiento" type="date" title="Fecha Vencimiento" class="bg-slate-800 border border-slate-700 text-slate-100 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm" required>
-            <div class="flex gap-2">
-              <button type="submit" :disabled="cargando || !!errorRut" class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white py-2.5 rounded-lg font-semibold text-sm transition-colors">
-                {{ cargando ? '...' : (socioEditandoId ? 'Actualizar' : 'Guardar') }}
-              </button>
-              <button v-if="socioEditandoId" @click="cancelarEdicionSocio" type="button" class="bg-slate-700 hover:bg-slate-600 text-white px-3 rounded-lg font-bold transition-colors">✕</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="relative">
-          <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">🔍</span>
-          <input v-model="busqueda" placeholder="Buscar por nombre, apellido o RUT..." class="w-full bg-slate-900 border border-slate-700 text-slate-100 pl-10 pr-4 py-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none placeholder-slate-600 text-sm">
-        </div>
-
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-          <table class="min-w-full text-sm">
-            <thead class="bg-slate-800 text-slate-400 text-xs uppercase tracking-wider">
-              <tr>
-                <th class="py-3 px-5 text-left">RUT</th>
-                <th class="py-3 px-5 text-left">Nombre</th>
-                <th class="py-3 px-5 text-left">Vencimiento</th>
-                <th class="py-3 px-5 text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-800">
-              <tr v-for="socio in sociosFiltrados" :key="socio.id" class="hover:bg-slate-800/50 transition-colors">
-                <td class="py-3 px-5 text-slate-400 font-mono text-xs">{{ socio.rut }}</td>
-                <td class="py-3 px-5 font-semibold text-slate-100">{{ socio.nombre }} {{ socio.apellido }}</td>
-                <td class="py-3 px-5 text-slate-400">{{ socio.fechaVencimiento || 'Sin pago' }}</td>
-                <td class="py-3 px-5 text-center space-x-2">
-                  <button @click="cargarDatosSocio(socio)" class="bg-indigo-900/50 text-indigo-300 px-3 py-1 rounded-lg text-xs font-bold hover:bg-indigo-900 transition-colors border border-indigo-800">Editar</button>
-                  <button @click="pedirConfirmacion('socio', socio.id)" class="bg-red-900/30 text-red-400 px-3 py-1 rounded-lg text-xs font-bold hover:bg-red-900/60 transition-colors border border-red-900">Eliminar</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- ===== MEMBRESÍAS ===== -->
-      <section v-if="tabActual === 'membresias'" class="space-y-5">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-          <h3 class="font-bold text-white mb-4 text-sm">{{ membresiaEditandoId ? '✏️ Actualizar membresía' : '➕ Agregar membresía' }}</h3>
-          <form @submit.prevent="membresiaEditandoId ? actualizarMembresia() : crearMembresia()" class="grid grid-cols-1 md:grid-cols-4 gap-3">
-            
-            <!-- Ahora es un Select con planes predefinidos -->
-            <select v-model="formularioMembresia.tipo" @change="autoCompletarMembresia" class="bg-slate-800 border border-slate-700 text-slate-100 p-2.5 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" required>
-              <option value="" disabled>Elige el tipo de plan...</option>
-              <option v-for="plan in opcionesPlanes" :key="plan.tipo" :value="plan.tipo">{{ plan.tipo }}</option>
-            </select>
-
-            <!-- Inputs en modo solo lectura para que no los rompan -->
-            <div class="relative">
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500 font-bold">$</span>
-              <input v-model="formularioMembresia.precio" type="number" placeholder="Precio" class="w-full bg-slate-900 border border-slate-700 text-emerald-400 font-bold pl-8 pr-2.5 py-2.5 rounded-lg outline-none cursor-not-allowed text-sm" readonly required>
-            </div>
-
-            <div class="relative">
-              <input v-model="formularioMembresia.duracionDias" type="number" placeholder="Duración" class="w-full bg-slate-900 border border-slate-700 text-slate-400 pl-3 pr-12 py-2.5 rounded-lg outline-none cursor-not-allowed text-sm" readonly required>
-              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-bold">DÍAS</span>
-            </div>
-
-            <div class="flex gap-2">
-              <button type="submit" :disabled="cargando || !formularioMembresia.tipo" class="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors">
-                {{ cargando ? '...' : (membresiaEditandoId ? 'Actualizar' : 'Guardar') }}
-              </button>
-              <button v-if="membresiaEditandoId" @click="cancelarEdicionMembresia" type="button" class="bg-slate-700 hover:bg-slate-600 text-white px-3 rounded-lg font-bold transition-colors">✕</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-          <table class="min-w-full text-sm">
-            <thead class="bg-slate-800 text-slate-400 text-xs uppercase tracking-wider">
-              <tr>
-                <th class="py-3 px-5 text-left">ID</th>
-                <th class="py-3 px-5 text-left">Tipo de Plan</th>
-                <th class="py-3 px-5 text-left">Precio</th>
-                <th class="py-3 px-5 text-left">Duración</th>
-                <th class="py-3 px-5 text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-800">
-              <tr v-for="m in membresias" :key="m.id" class="hover:bg-slate-800/50 transition-colors">
-                <td class="py-3 px-5 text-slate-600 font-mono text-xs">#{{ m.id }}</td>
-                <td class="py-3 px-5 font-semibold text-slate-100">{{ m.tipo }}</td>
-                <td class="py-3 px-5 font-black text-emerald-400">${{ m.precio.toLocaleString('es-CL') }}</td>
-                <td class="py-3 px-5 text-slate-400">{{ m.duracionDias }} días</td>
-                <td class="py-3 px-5 text-center space-x-2">
-                  <button @click="cargarDatosMembresia(m)" class="bg-indigo-900/50 text-indigo-300 px-3 py-1 rounded-lg text-xs font-bold hover:bg-indigo-900 transition-colors border border-indigo-800">Editar</button>
-                  <button @click="pedirConfirmacion('membresia', m.id)" class="bg-red-900/30 text-red-400 px-3 py-1 rounded-lg text-xs font-bold hover:bg-red-900/60 transition-colors border border-red-900">Eliminar</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- ===== CLASES ===== -->
-      <section v-if="tabActual === 'clases'" class="space-y-5">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-          <h3 class="font-bold text-white mb-4 text-sm">➕ Programar nueva clase</h3>
-          <form @submit.prevent="crearClase()" class="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <input v-model="formularioClase.nombre" placeholder="Clase (ej: Spinning)" class="bg-slate-800 border border-slate-700 text-slate-100 p-2.5 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none placeholder-slate-600 text-sm" required>
-            
-            <!-- Horario va primero ahora -->
-            <input v-model="formularioClase.horario" type="time" title="Horario de inicio" class="bg-slate-800 border border-slate-700 text-slate-100 p-2.5 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none text-sm" required>
-
-            <!-- Instructor predefinido -->
-            <select v-model="formularioClase.instructor" class="bg-slate-800 border border-slate-700 text-slate-100 p-2.5 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none text-sm" required>
-              <option value="" disabled>Selecciona instructor...</option>
-              <option v-for="inst in opcionesInstructores" :key="inst" :value="inst">{{ inst }}</option>
-            </select>
-
-            <input v-model="formularioClase.cupos" type="number" min="1" placeholder="Cupos (ej: 15)" class="bg-slate-800 border border-slate-700 text-slate-100 p-2.5 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none placeholder-slate-600 text-sm" required>
-            <button type="submit" :disabled="cargando" class="bg-amber-600 hover:bg-amber-700 disabled:opacity-40 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors">
-              {{ cargando ? '...' : 'Guardar Clase' }}
-            </button>
-          </form>
-        </div>
-
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-          <table class="min-w-full text-sm">
-            <thead class="bg-slate-800 text-slate-400 text-xs uppercase tracking-wider">
-              <tr>
-                <th class="py-3 px-5 text-left">Clase</th>
-                <th class="py-3 px-5 text-left">Horario</th>
-                <th class="py-3 px-5 text-left">Instructor</th>
-                <th class="py-3 px-5 text-left">Cupos Disp.</th>
-                <th class="py-3 px-5 text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-800">
-              <tr v-for="c in clases" :key="c.id" class="hover:bg-slate-800/50 transition-colors">
-                <td class="py-3 px-5 font-semibold text-slate-100">{{ c.nombre }}</td>
-                <td class="py-3 px-5 text-slate-400">{{ c.horario }}</td>
-                <td class="py-3 px-5 text-slate-400">{{ c.instructor }}</td>
-                <td class="py-3 px-5 font-black text-amber-400">{{ c.cupos }}</td>
-                <td class="py-3 px-5 text-center space-x-2">
-                  <button @click="abrirModalInscripcion(c.id)" class="bg-emerald-900/50 text-emerald-300 px-3 py-1 rounded-lg text-xs font-bold hover:bg-emerald-900 transition-colors border border-emerald-800">
-                    ➕ Inscribir
-                  </button>
-                  <button @click="pedirConfirmacion('clase', c.id)" class="bg-red-900/30 text-red-400 px-3 py-1 rounded-lg text-xs font-bold hover:bg-red-900/60 transition-colors border border-red-900">Eliminar</button>
-                </td>
-              </tr>
-              <tr v-if="clases.length === 0">
-                <td colspan="5" class="py-12 text-center text-slate-600">Aún no hay clases programadas.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <!-- Tabs -->
+      <DashboardTab v-if="tabActual === 'dashboard'" :socios="socios" :clases="clases" :membresias="membresias" @cambiarTab="tabActual = $event" />
+      <SociosTab v-if="tabActual === 'socios'" :socios="socios" :membresias="membresias" :cargando="cargando" @crearSocio="crearSocio" @actualizarSocio="actualizarSocio" @pedirConfirmacion="pedirConfirmacion" />
+      <MembresiaTab v-if="tabActual === 'membresias'" :membresias="membresias" :esAdmin="esAdmin" :cargando="cargando" @crearMembresia="crearMembresia" @actualizarMembresia="actualizarMembresia" @pedirConfirmacion="pedirConfirmacion" />
+      <ClasesTab v-if="tabActual === 'clases'" :clases="clases" :entrenadores="entrenadores" :esAdmin="esAdmin" :cargando="cargando" @crearClase="crearClase" @pedirConfirmacion="pedirConfirmacion" @abrirInscripcion="abrirModalInscripcion" />
+      <EntrenadoresTab v-if="tabActual === 'entrenadores'" :entrenadores="entrenadores" :esAdmin="esAdmin" :cargando="cargando" @agregarEntrenador="agregarEntrenador" @pedirConfirmacion="pedirConfirmacion" />
 
     </div>
   </div>
@@ -381,31 +117,48 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import DashboardTab from './tabs/DashboardTab.vue';
+import SociosTab from './tabs/SociosTab.vue';
+import MembresiaTab from './tabs/MembresiaTab.vue';
+import ClasesTab from './tabs/ClasesTab.vue';
+import EntrenadoresTab from './tabs/EntrenadoresTab.vue';
 
-const props = defineProps({ token: String });
-const emit = defineEmits(['logout']);
-
+const router = useRouter();
+const token = localStorage.getItem('token');
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
-const tabActual = ref('dashboard');
-const cargando = ref(false);
-const busqueda = ref('');
-const errorRut = ref('');
-
+// ─── Estado del usuario ────────────────────────────────────────────────
 const usuarioActual = computed(() => {
   try {
-    const payload = JSON.parse(atob(props.token.split('.')[1]));
+    if (!token) return '';
+    const payload = JSON.parse(atob(token.split('.')[1]));
     return payload.nombre || payload.email || '';
   } catch { return ''; }
 });
 
+const rolUsuario = computed(() => {
+  try {
+    if (!token) return 'empleado';
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.rol || 'empleado';
+  } catch { return 'empleado'; }
+});
+
+const esAdmin = computed(() => rolUsuario.value === 'admin');
+
+// ─── Tabs ───────────────────────────────────────────────────────────────
+const tabActual = ref('dashboard');
 const tabs = [
   { id: 'dashboard', label: 'Dashboard', icono: '📊' },
   { id: 'socios', label: 'Socios', icono: '👥' },
   { id: 'membresias', label: 'Membresías', icono: '🏷️' },
   { id: 'clases', label: 'Clases', icono: '🏋️' },
+  { id: 'entrenadores', label: 'Entrenadores', icono: '🤸' },
 ];
 
+// ─── UI helpers ─────────────────────────────────────────────────────────
+const cargando = ref(false);
 const toast = ref({ visible: false, msg: '', tipo: 'ok' });
 let toastTimer = null;
 const mostrarToast = (msg, tipo = 'ok') => {
@@ -421,204 +174,136 @@ const pedirConfirmacion = (tipo, id) => {
     titulo: `Eliminar ${tipo}`,
     msg: 'Esta acción no se puede deshacer.',
     accion: () => {
-      if(tipo === 'socio') eliminarSocio(id);
-      if(tipo === 'membresia') eliminarMembresia(id);
-      if(tipo === 'clase') eliminarClase(id);
-    },
+      if (tipo === 'socio') eliminarSocio(id);
+      if (tipo === 'membresia') eliminarMembresia(id);
+      if (tipo === 'clase') eliminarClase(id);
+      if (tipo === 'entrenador') eliminarEntrenador(id);
+    }
   };
 };
 const confirmarModal = () => { modal.value.accion?.(); modal.value.visible = false; };
 
+// ─── Cliente API ─────────────────────────────────────────────────────────
 const api = async (path, opts = {}) => {
   const res = await fetch(`${API}${path}`, {
     ...opts,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${props.token}`,
-      ...opts.headers,
-    },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...opts.headers },
   });
-  if (res.status === 401) { emit('logout'); return null; }
+  if (res.status === 401) { cerrarSesion(); return null; }
   return res;
 };
 
-const validarRut = () => {
-  const rut = formularioSocio.value.rut.trim();
-  if (!rut) { errorRut.value = ''; return; }
-  const limpio = rut.replace(/\./g, '').replace(/-/g, '');
-  const cuerpo = limpio.slice(0, -1);
-  const dv = limpio.slice(-1).toUpperCase();
-  if (!/^\d+$/.test(cuerpo)) { errorRut.value = 'Formato inválido (ej: 12.345.678-9)'; return; }
-  let suma = 0, mult = 2;
-  for (let i = cuerpo.length - 1; i >= 0; i--) {
-    suma += parseInt(cuerpo[i]) * mult;
-    mult = mult < 7 ? mult + 1 : 2;
-  }
-  const dvEsp = 11 - (suma % 11);
-  const dvCalc = dvEsp === 11 ? '0' : dvEsp === 10 ? 'K' : String(dvEsp);
-  errorRut.value = dv === dvCalc ? '' : 'RUT inválido';
+const cerrarSesion = () => {
+  localStorage.removeItem('token');
+  router.push('/login');
 };
 
-// ================= DATOS PREDEFINIDOS (INVENTOS PRO) =================
-const opcionesPlanes = [
-  { tipo: 'Plan Básico (1 Mes)', precio: 25000, duracionDias: 30 },
-  { tipo: 'Plan Pumper (3 Meses)', precio: 65000, duracionDias: 90 },
-  { tipo: 'Plan Espartano (6 Meses)', precio: 120000, duracionDias: 180 },
-  { tipo: 'Plan Bestia (1 Año)', precio: 200000, duracionDias: 365 }
-];
-
-const opcionesInstructores = [
-  'Juan "La Roca" Pérez',
-  'María "Espartana" Gómez',
-  'Pedro "Ironman" Silva',
-  'Camila "Destructora" Rojas',
-  'Ronnie "Yeah Buddy" C.'
-];
-
-// Función mágica que auto-llena el formulario de membresía
-const autoCompletarMembresia = () => {
-  const planElegido = opcionesPlanes.find(p => p.tipo === formularioMembresia.value.tipo);
-  if (planElegido) {
-    formularioMembresia.value.precio = planElegido.precio;
-    formularioMembresia.value.duracionDias = planElegido.duracionDias;
-  }
-};
-
-// ================= ESTADOS Y LÓGICA =================
+// ─── Datos reactivos ─────────────────────────────────────────────────────
 const socios = ref([]);
 const membresias = ref([]);
 const clases = ref([]);
+const entrenadores = ref([]);
 
-const socioEditandoId = ref(null);
-const formularioSocio = ref({ rut: '', nombre: '', apellido: '', email: '', fechaVencimiento: '' });
+const hoy = computed(() => new Date().toISOString().split('T')[0]);
+const sociosActivos = computed(() => socios.value.filter(s => s.fechaVencimiento && s.fechaVencimiento >= hoy.value));
 
-const membresiaEditandoId = ref(null);
-const formularioMembresia = ref({ tipo: '', precio: '', duracionDias: '' });
-
-const formularioClase = ref({ nombre: '', instructor: '', horario: '', cupos: '' });
 const modalInscripcion = ref({ visible: false, claseId: null, socioId: '' });
+const claseInscripcion = computed(() => clases.value.find(c => c.id === modalInscripcion.value.claseId));
 
-// Computados Dashboard
-const sociosFiltrados = computed(() => {
-  const q = busqueda.value.toLowerCase();
-  if (!q) return socios.value;
-  return socios.value.filter(s => s.nombre.toLowerCase().includes(q) || s.apellido.toLowerCase().includes(q) || s.rut.toLowerCase().includes(q));
-});
-const ultimosSocios = computed(() => [...socios.value].slice(-5).reverse());
-
-// Helpers para el dashboard
-const hoy = new Date().toISOString().split('T')[0];
-const enUnaSemana = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-const estaActivo = (socio) => socio.fechaVencimiento && socio.fechaVencimiento >= hoy;
-const sociosActivos = computed(() => socios.value.filter(s => estaActivo(s)));
-const sociosVencidos = computed(() => socios.value.filter(s => !s.fechaVencimiento || s.fechaVencimiento < enUnaSemana));
-const cuposTotales = computed(() => clases.value.reduce((a, c) => a + c.cupos, 0));
-const precioMinimo = computed(() => membresias.value.length ? Math.min(...membresias.value.map(m => m.precio)) : 0);
-
-const ocupacionPorcentaje = (clase) => {
-  if (!clase.capacidadMax || clase.capacidadMax <= 0) return 0;
-  return Math.min(Math.round((1 - clase.cupos / clase.capacidadMax) * 100), 100);
-};
-const ocupacionColor = (clase) => {
-  const p = ocupacionPorcentaje(clase);
-  if (p >= 80) return 'bg-red-950/60 text-red-400 border-red-900';
-  if (p >= 50) return 'bg-amber-950/60 text-amber-400 border-amber-900';
-  return 'bg-emerald-950/60 text-emerald-400 border-emerald-900';
-};
-const ocupacionBarColor = (clase) => {
-  const p = ocupacionPorcentaje(clase);
-  if (p >= 80) return 'bg-red-500';
-  if (p >= 50) return 'bg-amber-500';
-  return 'bg-emerald-500';
-};
-
-// SOCIOS
-const obtenerSocios = async () => {
+// ─── CRUD Socios ─────────────────────────────────────────────────────────
+const cargarSocios = async () => {
   const res = await api('/socios');
   if (res?.ok) socios.value = await res.json();
 };
-const crearSocio = async () => {
-  if (errorRut.value) return;
+
+const crearSocio = async (datos, callback) => {
   cargando.value = true;
-  const res = await api('/socios', { method: 'POST', body: JSON.stringify(formularioSocio.value) });
-  if (res?.ok) { cancelarEdicionSocio(); obtenerSocios(); mostrarToast('Socio creado.'); }
-  else mostrarToast('No se pudo crear. Revisa RUT/Email repetidos.', 'err');
+  const res = await api('/socios', { method: 'POST', body: JSON.stringify(datos) });
+  if (res?.ok) { callback?.(); cargarSocios(); mostrarToast('Socio registrado con su membresía.'); }
+  else mostrarToast('No se pudo crear. Revisa RUT/Email.', 'err');
   cargando.value = false;
 };
-const cargarDatosSocio = (socio) => { socioEditandoId.value = socio.id; formularioSocio.value = { ...socio }; errorRut.value = ''; tabActual.value = 'socios'; };
-const cancelarEdicionSocio = () => { socioEditandoId.value = null; formularioSocio.value = { rut: '', nombre: '', apellido: '', email: '', fechaVencimiento: '' }; errorRut.value = ''; };
-const actualizarSocio = async () => {
-  if (errorRut.value) return;
+const actualizarSocio = async (id, datos, callback) => {
   cargando.value = true;
-  const res = await api(`/socios/${socioEditandoId.value}`, { method: 'PUT', body: JSON.stringify(formularioSocio.value) });
-  if (res?.ok) { cancelarEdicionSocio(); obtenerSocios(); mostrarToast('Socio actualizado.'); }
+  const res = await api(`/socios/${id}`, { method: 'PUT', body: JSON.stringify(datos) });
+  if (res?.ok) { callback?.(); cargarSocios(); mostrarToast('Socio actualizado.'); }
   else mostrarToast('Error al actualizar.', 'err');
   cargando.value = false;
 };
 const eliminarSocio = async (id) => {
   const res = await api(`/socios/${id}`, { method: 'DELETE' });
-  if (res?.ok) { obtenerSocios(); mostrarToast('Socio eliminado.'); }
+  if (res?.ok) { cargarSocios(); mostrarToast('Socio eliminado.'); }
   else mostrarToast('Error al eliminar.', 'err');
 };
 
-// MEMBRESÍAS
-const obtenerMembresias = async () => {
+// ─── CRUD Membresías ─────────────────────────────────────────────────────
+const cargarMembresias = async () => {
   const res = await api('/membresias');
   if (res?.ok) membresias.value = await res.json();
 };
-const crearMembresia = async () => {
+const crearMembresia = async (datos, callback) => {
   cargando.value = true;
-  const body = { tipo: formularioMembresia.value.tipo, precio: Number(formularioMembresia.value.precio), duracionDias: Number(formularioMembresia.value.duracionDias) };
-  const res = await api('/membresias', { method: 'POST', body: JSON.stringify(body) });
-  if (res?.ok) { cancelarEdicionMembresia(); obtenerMembresias(); mostrarToast('Membresía creada.'); }
+  const res = await api('/membresias', { method: 'POST', body: JSON.stringify(datos) });
+  if (res?.ok) { callback?.(); cargarMembresias(); mostrarToast('Membresía creada.'); }
   else mostrarToast('Error al crear membresía.', 'err');
   cargando.value = false;
 };
-const cargarDatosMembresia = (m) => { membresiaEditandoId.value = m.id; formularioMembresia.value = { ...m }; tabActual.value = 'membresias'; };
-const cancelarEdicionMembresia = () => { membresiaEditandoId.value = null; formularioMembresia.value = { tipo: '', precio: '', duracionDias: '' }; };
-const actualizarMembresia = async () => {
+const actualizarMembresia = async (id, datos, callback) => {
   cargando.value = true;
-  const body = { tipo: formularioMembresia.value.tipo, precio: Number(formularioMembresia.value.precio), duracionDias: Number(formularioMembresia.value.duracionDias) };
-  const res = await api(`/membresias/${membresiaEditandoId.value}`, { method: 'PUT', body: JSON.stringify(body) });
-  if (res?.ok) { cancelarEdicionMembresia(); obtenerMembresias(); mostrarToast('Membresía actualizada.'); }
+  const res = await api(`/membresias/${id}`, { method: 'PUT', body: JSON.stringify(datos) });
+  if (res?.ok) { callback?.(); cargarMembresias(); mostrarToast('Membresía actualizada.'); }
   else mostrarToast('Error al actualizar.', 'err');
   cargando.value = false;
 };
 const eliminarMembresia = async (id) => {
   const res = await api(`/membresias/${id}`, { method: 'DELETE' });
-  if (res?.ok) { obtenerMembresias(); mostrarToast('Membresía eliminada.'); }
+  if (res?.ok) { cargarMembresias(); mostrarToast('Membresía eliminada.'); }
   else mostrarToast('Error al eliminar.', 'err');
 };
 
-// CLASES E INSCRIPCIONES
-const obtenerClases = async () => {
+// ─── CRUD Clases ─────────────────────────────────────────────────────────
+const cargarClases = async () => {
   const res = await api('/clases');
   if (res?.ok) clases.value = await res.json();
 };
-const crearClase = async () => {
+const crearClase = async (datos, callback) => {
   cargando.value = true;
-  const body = { ...formularioClase.value, cupos: Number(formularioClase.value.cupos) };
-  const res = await api('/clases', { method: 'POST', body: JSON.stringify(body) });
-  if (res?.ok) { 
-    formularioClase.value = { nombre: '', instructor: '', horario: '', cupos: '' };
-    obtenerClases(); 
-    mostrarToast('Clase programada con éxito.'); 
-  } else {
-    mostrarToast('Error al crear la clase.', 'err');
+  const res = await api('/clases', { method: 'POST', body: JSON.stringify(datos) });
+  if (res?.ok) { callback?.(); cargarClases(); mostrarToast('Clase programada con éxito.'); }
+  else {
+    const data = res ? await res.json() : {};
+    mostrarToast(data.error || 'Error al crear la clase.', 'err');
   }
   cargando.value = false;
 };
 const eliminarClase = async (id) => {
   const res = await api(`/clases/${id}`, { method: 'DELETE' });
-  if (res?.ok) { obtenerClases(); mostrarToast('Clase eliminada.'); }
+  if (res?.ok) { cargarClases(); mostrarToast('Clase eliminada.'); }
   else mostrarToast('Error al eliminar clase.', 'err');
 };
 
+// ─── Entrenadores ─────────────────────────────────────────────────────────
+const cargarEntrenadores = async () => {
+  const res = await api('/entrenadores');
+  if (res?.ok) entrenadores.value = await res.json();
+};
+const agregarEntrenador = async (datos, callback) => {
+  cargando.value = true;
+  const res = await api('/entrenadores', { method: 'POST', body: JSON.stringify(datos) });
+  if (res?.ok) { callback?.(); cargarEntrenadores(); mostrarToast('Entrenador agregado.'); }
+  else mostrarToast('Error al agregar entrenador.', 'err');
+  cargando.value = false;
+};
+const eliminarEntrenador = async (id) => {
+  const res = await api(`/entrenadores/${id}`, { method: 'DELETE' });
+  if (res?.ok) { cargarEntrenadores(); mostrarToast('Entrenador eliminado.'); }
+  else mostrarToast('Error al eliminar.', 'err');
+};
+
+// ─── Inscripciones ────────────────────────────────────────────────────────
 const abrirModalInscripcion = (claseId) => {
   modalInscripcion.value = { visible: true, claseId, socioId: '' };
 };
-
 const procesarInscripcion = async () => {
   cargando.value = true;
   try {
@@ -626,22 +311,27 @@ const procesarInscripcion = async () => {
       method: 'POST',
       body: JSON.stringify({ claseId: modalInscripcion.value.claseId, socioId: modalInscripcion.value.socioId })
     });
-
     if (res?.ok) {
       mostrarToast('Inscripción exitosa. Cupo descontado.', 'ok');
       modalInscripcion.value.visible = false;
-      obtenerClases(); // Refrescar los cupos
+      cargarClases();
     } else if (res) {
       const data = await res.json();
-      mostrarToast(data.message || 'Error al inscribir.', 'err');
+      mostrarToast(data.message || data.error || 'Error al inscribir.', 'err');
     }
-  } catch (error) {
-    mostrarToast('Error de conexión al servidor', 'err');
-  }
+  } catch { mostrarToast('Error de conexión al servidor', 'err'); }
   cargando.value = false;
 };
 
-onMounted(() => { obtenerSocios(); obtenerMembresias(); obtenerClases(); });
+// ─── Init ────────────────────────────────────────────────────────────────
+onMounted(() => {
+  if (token) {
+    cargarSocios();
+    cargarMembresias();
+    cargarClases();
+    cargarEntrenadores();
+  }
+});
 </script>
 
 <style scoped>

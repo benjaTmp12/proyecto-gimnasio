@@ -5,8 +5,8 @@ const errorHandler = (err, req, res, next) => {
     const message = err.message || 'Error interno del servidor';
 
     const response = {
-        error: status !== 200,
-        message: message
+        success: false,
+        error: message
     };
 
     if (process.env.NODE_ENV === 'development') {

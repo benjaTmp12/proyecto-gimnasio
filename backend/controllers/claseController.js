@@ -13,7 +13,8 @@ const obtenerClases = async (req, res, next) => {
 // 2. Crear clase
 const crearClase = async (req, res, next) => {
     try {
-        const nuevaClase = await Clase.create(req.body);
+        const { nombre, instructor, horario, cupos, capacidadMax } = req.body;
+        const nuevaClase = await Clase.create({ nombre, instructor, horario, cupos, capacidadMax: capacidadMax || 20 });
         res.status(201).json(nuevaClase);
     } catch (error) {
         next(error); // GEN-08
@@ -27,7 +28,8 @@ const actualizarClase = async (req, res, next) => {
         const clase = await Clase.findByPk(id);
         
         if (clase) {
-            await clase.update(req.body);
+            const { nombre, instructor, horario, cupos, capacidadMax } = req.body;
+            await clase.update({ nombre, instructor, horario, cupos, capacidadMax });
             res.json(clase);
         } else {
             res.status(404).json({ error: true, message: 'Clase no encontrada' });

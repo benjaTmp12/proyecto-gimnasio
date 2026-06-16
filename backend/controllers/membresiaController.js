@@ -11,7 +11,8 @@ exports.obtenerMembresias = async (req, res) => {
 
 exports.crearMembresia = async (req, res) => {
     try {
-        const membresia = await Membresia.create(req.body);
+        const { tipo, precio, duracionDias } = req.body;
+        const membresia = await Membresia.create({ tipo, precio, duracionDias });
         res.status(201).json(membresia);
     } catch (error) {
         res.status(400).json({ error: 'Error al crear la membresía' });
@@ -37,7 +38,8 @@ exports.actualizarMembresia = async (req, res) => {
         const membresia = await Membresia.findByPk(id);
         
         if (membresia) {
-            await membresia.update(req.body);
+            const { tipo, precio, duracionDias } = req.body;
+            await membresia.update({ tipo, precio, duracionDias });
             res.json(membresia);
         } else {
             res.status(404).json({ error: 'Membresía no encontrada' });

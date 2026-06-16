@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const { hashPassword } = require('../utils/hash');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto'); 
 const { Usuario } = require('../models');
@@ -13,8 +14,7 @@ const registrarUsuario = async (req, res) => {
             return res.status(409).json({ error: 'El email ya está en uso' });
         }
 
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+        const hashedPassword = await hashPassword(password);
 
         const nuevoUsuario = await Usuario.create({ nombre, email, password: hashedPassword });
 
@@ -45,7 +45,7 @@ const loginUsuario = async (req, res) => {
 
         //  Usa JWT_SECRET desde variables de entorno (GEN-02)
         const token = jwt.sign(
-            { id: usuario.id, nombre: usuario.nombre, email: usuario.email },
+            { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol },
             process.env.JWT_SECRET,
             { expiresIn: '8h' }
         );
@@ -53,7 +53,7 @@ const loginUsuario = async (req, res) => {
         res.json({
             mensaje: 'Login exitoso',
             token,
-            usuario: { id: usuario.id, nombre: usuario.nombre, email: usuario.email }
+            usuario: { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol }
         });
     } catch (error) {
         console.error(error);
@@ -104,8 +104,7 @@ const resetearPassword = async (req, res) => {
         }
 
         // Encriptar la nueva contraseña
-        const salt = await bcrypt.genSalt(10);
-        usuario.password = await bcrypt.hash(nuevaPassword, salt);
+        usuario.password = await hashPassword(nuevaPassword);
         
         // Limpiar los campos del token en la base de datos
         usuario.resetToken = null;

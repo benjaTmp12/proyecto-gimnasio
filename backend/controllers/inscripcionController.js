@@ -1,49 +1,51 @@
-const { Socio, Clase, Inscripcion } = require('../models');
+const { sequelize, Socio, Clase, Inscripcion } = require('../models');
 
 exports.inscribirSocio = async (req, res) => {
+    const t = await sequelize.transaction();
     try {
         const { socioId, claseId } = req.body;
 
-        // 1. Buscar al socio
-        const socio = await Socio.findByPk(socioId);
-        if (!socio) return res.status(404).json({ error: 'Socio no encontrado' });
-
-      
-        const hoy = new Date().toISOString().split('T')[0]; // Obtiene la fecha actual en formato YYYY-MM-DD
-        
-        // Si no tiene fecha o la fecha ya pasó, tiramos el error 409 (Conflicto)
-        if (!socio.fechaVencimiento || socio.fechaVencimiento < hoy) {
-            return res.status(409).json({ 
-                error: 'Operación denegada', 
-                message: 'La membresía del socio está vencida o no registra pagos activos.' 
-            });
+        const socio = await Socio.findByPk(socioId, { transaction: t });
+        if (!socio) {
+            await t.rollback();
+            return res.status(404).json({ error: 'Socio no encontrado' });
         }
 
-        // 2. Buscar la clase
-        const clase = await Clase.findByPk(claseId);
-        if (!clase) return res.status(404).json({ error: 'Clase no encontrada' });
+        const hoy = new Date().toISOString().split('T')[0];
         
-        // Validar que queden cupos
+        if (!socio.fechaVencimiento || socio.fechaVencimiento < hoy) {
+            await t.rollback();
+            return res.status(409).json({ error: 'Operación denegada', message: 'La membresía del socio está vencida o no registra pagos activos.' });
+        }
+
+        const clase = await Clase.findByPk(claseId, { transaction: t });
+        if (!clase) {
+            await t.rollback();
+            return res.status(404).json({ error: 'Clase no encontrada' });
+        }
+        
         if (clase.cupos <= 0) {
+            await t.rollback();
             return res.status(409).json({ error: 'Operación denegada', message: 'La clase ya no tiene cupos disponibles.' });
         }
 
-       
-        // A) Creamos la inscripción
-        const nuevaInscripcion = await Inscripcion.create({ socioId, claseId, fecha: hoy });
-        
-        // B) Restamos 1 cupo a la clase y guardamos
-        clase.cupos -= 1;
-        await clase.save();
+        const inscripcionExistente = await Inscripcion.findOne({ where: { socioId, claseId, fecha: hoy }, transaction: t });
+        if (inscripcionExistente) {
+            await t.rollback();
+            return res.status(409).json({ error: 'Operación denegada', message: 'El socio ya está inscrito en esta clase hoy.' });
+        }
 
-        res.status(201).json({ 
-            mensaje: 'Inscripción exitosa', 
-            inscripcion: nuevaInscripcion,
-            cuposRestantes: clase.cupos
-        });
+        const nuevaInscripcion = await Inscripcion.create({ socioId, claseId, fecha: hoy }, { transaction: t });
+        
+        clase.cupos -= 1;
+        await clase.save({ transaction: t });
+
+        await t.commit();
+
+        res.status(201).json({ mensaje: 'Inscripción exitosa', inscripcion: nuevaInscripcion, cuposRestantes: clase.cupos });
 
     } catch (error) {
-        // GEN-08 y GEN-10: Respuesta de error limpia sin mostrar código fuente
+        if (!t.finished) await t.rollback();
         res.status(400).json({ error: 'Error de solicitud', message: 'Hubo un problema al procesar la inscripción.' });
     }
 };

@@ -4,6 +4,8 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class Socio extends Model {
     static associate(models) {
+      Socio.belongsTo(models.Membresia, { foreignKey: 'membresiaId', as: 'membresia' });
+      Socio.hasMany(models.Inscripcion, { foreignKey: 'socioId', as: 'inscripciones' });
     }
   }
   Socio.init({
@@ -28,6 +30,10 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     plan_precio: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    membresiaId: {
       type: DataTypes.INTEGER,
       allowNull: true
     }

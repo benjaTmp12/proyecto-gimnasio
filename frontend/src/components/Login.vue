@@ -135,8 +135,9 @@
 
 <script setup>
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 
-const emit = defineEmits(['login-success']);
+const router = useRouter();
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 // vistas: 'login' | 'registro' | 'olvide' | 'reset'
@@ -173,7 +174,8 @@ const manejarLogin = async () => {
     if (!res.ok) {
       throw new Error(data.errores?.[0]?.msg || data.error || 'Credenciales inválidas');
     }
-    emit('login-success', data.token);
+    localStorage.setItem('token', data.token);
+    router.push('/dashboard');
   } catch (error) {
     mostrarMensaje(error.message, 'error');
   } finally {

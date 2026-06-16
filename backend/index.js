@@ -2,17 +2,22 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { sequelize } = require('./models');
+const errorHandler = require('./middlewares/errorHandler');
 const authRoutes = require('./routes/authRoutes');
 const socioRoutes = require('./routes/socioRoutes'); 
 const membresiaRoutes = require('./routes/membresiaRoutes');
 const usuarioRoutes = require('./routes/usuarioRoutes');
 const claseRoutes = require('./routes/claseRoutes');
 const inscripcionRoutes = require('./routes/inscripcionRoutes');
+const entrenadorRoutes = require('./routes/entrenadorRoutes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 
-app.use(cors()); 
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || '*',
+  credentials: true
+}));
 app.use(express.json()); 
 
 app.get('/', (req, res) => {
@@ -28,7 +33,7 @@ app.use('/api/membresias', membresiaRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/clases', claseRoutes);
 app.use('/api/inscripciones', inscripcionRoutes);
-const errorHandler = require('./middlewares/errorHandler');
+app.use('/api/entrenadores', entrenadorRoutes);
 
 
 app.use((req, res, next) => {

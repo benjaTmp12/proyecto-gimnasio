@@ -18,7 +18,12 @@ module.exports = (sequelize, DataTypes) => {
     },
     // ---> AGREGAMOS ESTO <---
     resetToken: DataTypes.STRING,
-    resetTokenExpires: DataTypes.DATE
+    resetTokenExpires: DataTypes.DATE,
+    rol: {
+      type: DataTypes.ENUM('admin', 'empleado'),
+      allowNull: false,
+      defaultValue: 'empleado'
+    }
   }, {
     sequelize,
     modelName: 'Usuario',

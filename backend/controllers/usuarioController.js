@@ -1,10 +1,10 @@
 const { Usuario } = require('../models');
-const bcrypt = require('bcryptjs');
+const { hashPassword } = require('../utils/hash');
 
 exports.obtenerUsuarios = async (req, res) => {
     try {
         // Excluimos la contraseña para que no viaje al frontend por seguridad
-        const usuarios = await Usuario.findAll({ attributes: { exclude: ['password'] } });
+        const usuarios = await Usuario.findAll({ attributes: { exclude: ['password', 'resetToken', 'resetTokenExpires'] } });
         res.json(usuarios);
     } catch (error) {
         res.status(500).json({ error: 'Error al obtener usuarios' });
@@ -16,8 +16,7 @@ exports.crearUsuario = async (req, res) => {
         const { nombre, email, password } = req.body;
         
         // Encriptar la contraseña antes de guardar
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+        const hashedPassword = await hashPassword(password);
         
         const usuario = await Usuario.create({ nombre, email, password: hashedPassword });
         res.status(201).json({ id: usuario.id, nombre: usuario.nombre, email: usuario.email });
@@ -37,8 +36,7 @@ exports.actualizarUsuario = async (req, res) => {
             
             // Si el admin escribió una nueva contraseña, la encriptamos. Si la dejó vacía, no la tocamos.
             if (password) {
-                const salt = await bcrypt.genSalt(10);
-                datosActualizados.password = await bcrypt.hash(password, salt);
+                datosActualizados.password = await hashPassword(password);
             }
             
             await usuario.update(datosActualizados);
