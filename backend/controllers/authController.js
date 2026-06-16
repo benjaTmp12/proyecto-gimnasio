@@ -7,7 +7,7 @@ const { Usuario } = require('../models');
 // GEN-04: 
 const registrarUsuario = async (req, res) => {
     try {
-        const { nombre, email, password } = req.body;
+        const { nombre, email, password, rol } = req.body;
 
         const existeUsuario = await Usuario.findOne({ where: { email } });
         if (existeUsuario) {
@@ -16,11 +16,16 @@ const registrarUsuario = async (req, res) => {
 
         const hashedPassword = await hashPassword(password);
 
-        const nuevoUsuario = await Usuario.create({ nombre, email, password: hashedPassword });
+        const nuevoUsuario = await Usuario.create({ 
+            nombre, 
+            email, 
+            password: hashedPassword,
+            rol: rol || 'empleado'
+        });
 
         res.status(201).json({
             mensaje: 'Usuario registrado exitosamente',
-            usuario: { id: nuevoUsuario.id, nombre: nuevoUsuario.nombre, email: nuevoUsuario.email }
+            usuario: { id: nuevoUsuario.id, nombre: nuevoUsuario.nombre, email: nuevoUsuario.email, rol: nuevoUsuario.rol }
         });
     } catch (error) {
         console.error(error);

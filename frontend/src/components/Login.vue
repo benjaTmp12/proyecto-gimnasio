@@ -74,6 +74,14 @@
             <input v-model="formularioRegistro.password" type="password" placeholder="Mínimo 6 caracteres" required minlength="6"
               class="w-full bg-slate-800 border border-slate-700 text-slate-100 px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none placeholder-slate-600 text-sm transition-all">
           </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Rol</label>
+            <select v-model="formularioRegistro.rol"
+              class="w-full bg-slate-800 border border-slate-700 text-slate-100 px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm transition-all">
+              <option value="empleado">Empleado</option>
+              <option value="admin">Administrador (Admin)</option>
+            </select>
+          </div>
           <button type="submit" :disabled="cargando"
             class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white py-3 rounded-xl font-bold shadow-lg transition-all">
             {{ cargando ? 'Registrando...' : 'Crear cuenta' }}
@@ -146,7 +154,7 @@ const cargando = ref(false);
 const mensajeG = ref(null);
 
 const formularioLogin = ref({ email: '', password: '' });
-const formularioRegistro = ref({ nombre: '', email: '', password: '' });
+const formularioRegistro = ref({ nombre: '', email: '', password: '', rol: 'empleado' });
 const formularioRecuperar = ref({ email: '' });
 const formularioReset = ref({ token: '', nuevaPassword: '' });
 
@@ -198,7 +206,7 @@ const manejarRegistro = async () => {
       // Muestra errores 400 (validación) o 409 (email duplicado)
       throw new Error(data.errores?.[0]?.msg || data.error || 'Error al registrar');
     }
-    formularioRegistro.value = { nombre: '', email: '', password: '' };
+    formularioRegistro.value = { nombre: '', email: '', password: '', rol: 'empleado' };
     cambiarVista('login');
     mostrarMensaje('¡Cuenta creada! Ya puedes iniciar sesión.');
   } catch (error) {
