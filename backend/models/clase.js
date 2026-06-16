@@ -1,23 +1,22 @@
 'use strict';
-const {
-  Model
-} = require('sequelize');
+const { Model } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
   class Clase extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
     static associate(models) {
+      Clase.belongsTo(models.Entrenador, { foreignKey: 'entrenadorId', as: 'entrenador' });
       Clase.hasMany(models.Inscripcion, { foreignKey: 'claseId', as: 'inscripciones' });
     }
   }
   Clase.init({
-    nombre: DataTypes.STRING,
-    instructor: DataTypes.STRING,
-    horario: DataTypes.STRING,
-    cupos: DataTypes.INTEGER,
+    nombre: { type: DataTypes.STRING, allowNull: false },
+    instructor: { type: DataTypes.STRING, allowNull: true }, // Keep for compatibility/caching
+    horario: { type: DataTypes.STRING, allowNull: true }, // Keep for compatibility/caching
+    entrenadorId: { type: DataTypes.INTEGER, allowNull: false },
+    horaInicio: { type: DataTypes.STRING, allowNull: false },
+    horaFin: { type: DataTypes.STRING, allowNull: false },
+    dias: { type: DataTypes.JSON, allowNull: false },
+    cupos: { type: DataTypes.INTEGER, allowNull: false },
     capacidadMax: { type: DataTypes.INTEGER, defaultValue: 20 }
   }, {
     sequelize,

@@ -44,6 +44,45 @@
           </div>
         </div>
 
+        <!-- Nueva sección: Inscripción a Clases -->
+        <div v-if="!socioEditandoId" class="bg-slate-950/50 p-4 rounded-xl border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-bold text-slate-200">🏋️ Inscripción a Clases <span class="text-xs text-slate-500 font-normal ml-2">(Opcional)</span></h4>
+            <span v-if="formulario.clasesSeleccionadas.length > 0" class="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full font-bold">
+              {{ formulario.clasesSeleccionadas.length }} seleccionadas
+            </span>
+          </div>
+          
+          <div v-if="clases && clases.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            <div v-for="c in clases" :key="c.id" 
+              @click="c.cupos > 0 ? toggleClase(c.id) : null"
+              :class="[
+                'p-3 rounded-xl border transition-all relative overflow-hidden',
+                c.cupos === 0 
+                  ? 'bg-slate-900 border-slate-800 opacity-60 cursor-not-allowed' 
+                  : formulario.clasesSeleccionadas.includes(c.id)
+                    ? 'bg-indigo-900/30 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.1)] cursor-pointer'
+                    : 'bg-slate-800/80 border-slate-700 hover:border-slate-500 cursor-pointer'
+              ]">
+              
+              <div v-if="formulario.clasesSeleccionadas.includes(c.id)" class="absolute top-2 right-2 text-indigo-400">
+                ✅
+              </div>
+
+              <h5 class="font-bold text-slate-200 text-sm mb-1 pr-6">{{ c.nombre }}</h5>
+              <p class="text-xs text-slate-400 mb-2">🧑‍🏫 {{ c.instructor }} | 🕒 {{ c.horario }}</p>
+              
+              <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-700/50">
+                <span class="text-[10px] uppercase font-bold text-slate-500">Cupos</span>
+                <span :class="c.cupos === 0 ? 'text-red-400' : c.cupos <= 3 ? 'text-amber-400' : 'text-emerald-400'" class="font-black text-xs">
+                  {{ c.cupos === 0 ? 'AGOTADOS' : `${c.cupos} disp.` }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <p v-else class="text-sm text-slate-500">No hay clases programadas actualmente.</p>
+        </div>
+
         <div class="flex gap-2">
           <button type="submit" :disabled="cargando || !!errorRut || !formulario.plan_nombre" class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white py-2.5 rounded-lg font-semibold text-sm transition-colors">
             {{ cargando ? '...' : (socioEditandoId ? 'Actualizar Socio' : 'Registrar Socio') }}
@@ -102,6 +141,7 @@ import { ref, computed } from 'vue';
 const props = defineProps({
   socios: Array,
   membresias: Array,
+  clases: Array,
   cargando: Boolean
 });
 const emit = defineEmits(['crearSocio', 'actualizarSocio', 'pedirConfirmacion']);
@@ -109,7 +149,15 @@ const emit = defineEmits(['crearSocio', 'actualizarSocio', 'pedirConfirmacion'])
 const busqueda = ref('');
 const errorRut = ref('');
 const socioEditandoId = ref(null);
-const formulario = ref({ rut: '', nombre: '', apellido: '', email: '', fechaVencimiento: '', plan_nombre: '', plan_precio: null });
+const formulario = ref({ 
+  rut: '', nombre: '', apellido: '', email: '', fechaVencimiento: '', plan_nombre: '', plan_precio: null, clasesSeleccionadas: [] 
+});
+
+const toggleClase = (id) => {
+  const idx = formulario.value.clasesSeleccionadas.indexOf(id);
+  if (idx === -1) formulario.value.clasesSeleccionadas.push(id);
+  else formulario.value.clasesSeleccionadas.splice(idx, 1);
+};
 
 const planSeleccionado = computed(() => props.membresias.find(m => m.tipo === formulario.value.plan_nombre) || null);
 
@@ -151,12 +199,13 @@ const asignarPrecio = () => {
   }
 };
 
-const cargarSocio = (s) => { socioEditandoId.value = s.id; formulario.value = { ...s }; errorRut.value = ''; };
-const cancelar = () => { socioEditandoId.value = null; formulario.value = { rut: '', nombre: '', apellido: '', email: '', fechaVencimiento: '', plan_nombre: '', plan_precio: null }; errorRut.value = ''; };
+const cargarSocio = (s) => { socioEditandoId.value = s.id; formulario.value = { ...s, clasesSeleccionadas: [] }; errorRut.value = ''; };
+const cancelar = () => { socioEditandoId.value = null; formulario.value = { rut: '', nombre: '', apellido: '', email: '', fechaVencimiento: '', plan_nombre: '', plan_precio: null, clasesSeleccionadas: [] }; errorRut.value = ''; };
 
 const crearSocio = () => {
   if (errorRut.value) return;
-  emit('crearSocio', { ...formulario.value }, cancelar);
+  const payload = { ...formulario.value, clasesIds: formulario.value.clasesSeleccionadas };
+  emit('crearSocio', payload, cancelar);
 };
 const actualizarSocio = () => {
   if (errorRut.value) return;

@@ -105,11 +105,11 @@
       </nav>
 
       <!-- Tabs -->
-      <DashboardTab v-if="tabActual === 'dashboard'" :socios="socios" :clases="clases" :membresias="membresias" @cambiarTab="tabActual = $event" />
-      <SociosTab v-if="tabActual === 'socios'" :socios="socios" :membresias="membresias" :cargando="cargando" @crearSocio="crearSocio" @actualizarSocio="actualizarSocio" @pedirConfirmacion="pedirConfirmacion" />
+      <DashboardTab v-if="tabActual === 'dashboard'" :socios="socios" :clases="clases" :membresias="membresias" :statsData="statsData" @cambiarTab="tabActual = $event" />
+      <SociosTab v-if="tabActual === 'socios'" :socios="socios" :membresias="membresias" :clases="clases" :cargando="cargando" @crearSocio="crearSocio" @actualizarSocio="actualizarSocio" @pedirConfirmacion="pedirConfirmacion" />
       <MembresiaTab v-if="tabActual === 'membresias'" :membresias="membresias" :esAdmin="esAdmin" :cargando="cargando" @crearMembresia="crearMembresia" @actualizarMembresia="actualizarMembresia" @pedirConfirmacion="pedirConfirmacion" />
-      <ClasesTab v-if="tabActual === 'clases'" :clases="clases" :entrenadores="entrenadores" :esAdmin="esAdmin" :cargando="cargando" @crearClase="crearClase" @pedirConfirmacion="pedirConfirmacion" @abrirInscripcion="abrirModalInscripcion" />
-      <EntrenadoresTab v-if="tabActual === 'entrenadores'" :entrenadores="entrenadores" :esAdmin="esAdmin" :cargando="cargando" @agregarEntrenador="agregarEntrenador" @pedirConfirmacion="pedirConfirmacion" />
+      <ClasesTab v-if="tabActual === 'clases'" :clases="clases" :entrenadores="entrenadores" :esAdmin="esAdmin" :cargando="cargando" @crearClase="crearClase" @actualizarClase="actualizarClase" @pedirConfirmacion="pedirConfirmacion" @abrirInscripcion="abrirModalInscripcion" />
+      <EntrenadoresTab v-if="tabActual === 'entrenadores'" :entrenadores="entrenadores" :esAdmin="esAdmin" :cargando="cargando" @agregarEntrenador="agregarEntrenador" @actualizarEntrenador="actualizarEntrenador" @pedirConfirmacion="pedirConfirmacion" />
 
     </div>
   </div>
@@ -203,12 +203,23 @@ const socios = ref([]);
 const membresias = ref([]);
 const clases = ref([]);
 const entrenadores = ref([]);
+const statsData = ref({
+  stats: { totalEntrenadores: 0, entrenadoresActivos: 0, totalClases: 0, clasesDisponibles: 0, clasesCompletas: 0 },
+  clasesDeHoy: [],
+  rankingEntrenadores: []
+});
 
 const hoy = computed(() => new Date().toISOString().split('T')[0]);
 const sociosActivos = computed(() => socios.value.filter(s => s.fechaVencimiento && s.fechaVencimiento >= hoy.value));
 
 const modalInscripcion = ref({ visible: false, claseId: null, socioId: '' });
 const claseInscripcion = computed(() => clases.value.find(c => c.id === modalInscripcion.value.claseId));
+
+// ─── Stats ───────────────────────────────────────────────────────────────
+const cargarStats = async () => {
+  const res = await api('/dashboard/stats');
+  if (res?.ok) statsData.value = await res.json();
+};
 
 // ─── CRUD Socios ─────────────────────────────────────────────────────────
 const cargarSocios = async () => {
@@ -219,20 +230,37 @@ const cargarSocios = async () => {
 const crearSocio = async (datos, callback) => {
   cargando.value = true;
   const res = await api('/socios', { method: 'POST', body: JSON.stringify(datos) });
-  if (res?.ok) { callback?.(); cargarSocios(); mostrarToast('Socio registrado con su membresía.'); }
-  else mostrarToast('No se pudo crear. Revisa RUT/Email.', 'err');
+  if (res?.ok) { 
+    callback?.(); 
+    await cargarSocios(); 
+    await cargarClases(); // Reload classes to reflect updated spots
+    await cargarStats();
+    mostrarToast('Socio registrado y clases asignadas.'); 
+  } else {
+    const data = res ? await res.json() : {};
+    mostrarToast(data.mensaje || data.error || 'Error al crear socio o clases llenas.', 'err');
+  }
   cargando.value = false;
 };
 const actualizarSocio = async (id, datos, callback) => {
   cargando.value = true;
   const res = await api(`/socios/${id}`, { method: 'PUT', body: JSON.stringify(datos) });
-  if (res?.ok) { callback?.(); cargarSocios(); mostrarToast('Socio actualizado.'); }
+  if (res?.ok) { 
+    callback?.(); 
+    await cargarSocios(); 
+    await cargarStats();
+    mostrarToast('Socio actualizado.'); 
+  }
   else mostrarToast('Error al actualizar.', 'err');
   cargando.value = false;
 };
 const eliminarSocio = async (id) => {
   const res = await api(`/socios/${id}`, { method: 'DELETE' });
-  if (res?.ok) { cargarSocios(); mostrarToast('Socio eliminado.'); }
+  if (res?.ok) { 
+    await cargarSocios(); 
+    await cargarStats();
+    mostrarToast('Socio eliminado.'); 
+  }
   else mostrarToast('Error al eliminar.', 'err');
 };
 
@@ -244,20 +272,34 @@ const cargarMembresias = async () => {
 const crearMembresia = async (datos, callback) => {
   cargando.value = true;
   const res = await api('/membresias', { method: 'POST', body: JSON.stringify(datos) });
-  if (res?.ok) { callback?.(); cargarMembresias(); mostrarToast('Membresía creada.'); }
+  if (res?.ok) { 
+    callback?.(); 
+    await cargarMembresias(); 
+    await cargarStats();
+    mostrarToast('Membresía creada.'); 
+  }
   else mostrarToast('Error al crear membresía.', 'err');
   cargando.value = false;
 };
 const actualizarMembresia = async (id, datos, callback) => {
   cargando.value = true;
   const res = await api(`/membresias/${id}`, { method: 'PUT', body: JSON.stringify(datos) });
-  if (res?.ok) { callback?.(); cargarMembresias(); mostrarToast('Membresía actualizada.'); }
+  if (res?.ok) { 
+    callback?.(); 
+    await cargarMembresias(); 
+    await cargarStats();
+    mostrarToast('Membresía actualizada.'); 
+  }
   else mostrarToast('Error al actualizar.', 'err');
   cargando.value = false;
 };
 const eliminarMembresia = async (id) => {
   const res = await api(`/membresias/${id}`, { method: 'DELETE' });
-  if (res?.ok) { cargarMembresias(); mostrarToast('Membresía eliminada.'); }
+  if (res?.ok) { 
+    await cargarMembresias(); 
+    await cargarStats();
+    mostrarToast('Membresía eliminada.'); 
+  }
   else mostrarToast('Error al eliminar.', 'err');
 };
 
@@ -269,16 +311,40 @@ const cargarClases = async () => {
 const crearClase = async (datos, callback) => {
   cargando.value = true;
   const res = await api('/clases', { method: 'POST', body: JSON.stringify(datos) });
-  if (res?.ok) { callback?.(); cargarClases(); mostrarToast('Clase programada con éxito.'); }
+  if (res?.ok) { 
+    callback?.(); 
+    await cargarClases(); 
+    await cargarStats();
+    mostrarToast('Clase programada con éxito.'); 
+  }
   else {
     const data = res ? await res.json() : {};
     mostrarToast(data.error || 'Error al crear la clase.', 'err');
   }
   cargando.value = false;
 };
+const actualizarClase = async (id, datos, callback) => {
+  cargando.value = true;
+  const res = await api(`/clases/${id}`, { method: 'PUT', body: JSON.stringify(datos) });
+  if (res?.ok) { 
+    callback?.(); 
+    await cargarClases(); 
+    await cargarStats();
+    mostrarToast('Clase actualizada con éxito.'); 
+  }
+  else {
+    const data = res ? await res.json() : {};
+    mostrarToast(data.error || 'Error al actualizar la clase.', 'err');
+  }
+  cargando.value = false;
+};
 const eliminarClase = async (id) => {
   const res = await api(`/clases/${id}`, { method: 'DELETE' });
-  if (res?.ok) { cargarClases(); mostrarToast('Clase eliminada.'); }
+  if (res?.ok) { 
+    await cargarClases(); 
+    await cargarStats();
+    mostrarToast('Clase eliminada.'); 
+  }
   else mostrarToast('Error al eliminar clase.', 'err');
 };
 
@@ -290,13 +356,40 @@ const cargarEntrenadores = async () => {
 const agregarEntrenador = async (datos, callback) => {
   cargando.value = true;
   const res = await api('/entrenadores', { method: 'POST', body: JSON.stringify(datos) });
-  if (res?.ok) { callback?.(); cargarEntrenadores(); mostrarToast('Entrenador agregado.'); }
-  else mostrarToast('Error al agregar entrenador.', 'err');
+  if (res?.ok) { 
+    callback?.(); 
+    await cargarEntrenadores(); 
+    await cargarStats();
+    mostrarToast('Entrenador agregado.'); 
+  }
+  else {
+    const data = res ? await res.json() : {};
+    mostrarToast(data.error || 'Error al agregar entrenador.', 'err');
+  }
+  cargando.value = false;
+};
+const actualizarEntrenador = async (id, datos, callback) => {
+  cargando.value = true;
+  const res = await api(`/entrenadores/${id}`, { method: 'PUT', body: JSON.stringify(datos) });
+  if (res?.ok) { 
+    callback?.(); 
+    await cargarEntrenadores(); 
+    await cargarStats();
+    mostrarToast('Entrenador actualizado.'); 
+  }
+  else {
+    const data = res ? await res.json() : {};
+    mostrarToast(data.error || 'Error al actualizar entrenador.', 'err');
+  }
   cargando.value = false;
 };
 const eliminarEntrenador = async (id) => {
   const res = await api(`/entrenadores/${id}`, { method: 'DELETE' });
-  if (res?.ok) { cargarEntrenadores(); mostrarToast('Entrenador eliminado.'); }
+  if (res?.ok) { 
+    await cargarEntrenadores(); 
+    await cargarStats();
+    mostrarToast('Entrenador eliminado.'); 
+  }
   else mostrarToast('Error al eliminar.', 'err');
 };
 
@@ -314,7 +407,8 @@ const procesarInscripcion = async () => {
     if (res?.ok) {
       mostrarToast('Inscripción exitosa. Cupo descontado.', 'ok');
       modalInscripcion.value.visible = false;
-      cargarClases();
+      await cargarClases();
+      await cargarStats();
     } else if (res) {
       const data = await res.json();
       mostrarToast(data.message || data.error || 'Error al inscribir.', 'err');
@@ -330,6 +424,7 @@ onMounted(() => {
     cargarMembresias();
     cargarClases();
     cargarEntrenadores();
+    cargarStats();
   }
 });
 </script>

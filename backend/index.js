@@ -10,6 +10,7 @@ const usuarioRoutes = require('./routes/usuarioRoutes');
 const claseRoutes = require('./routes/claseRoutes');
 const inscripcionRoutes = require('./routes/inscripcionRoutes');
 const entrenadorRoutes = require('./routes/entrenadorRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -34,6 +35,7 @@ app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/clases', claseRoutes);
 app.use('/api/inscripciones', inscripcionRoutes);
 app.use('/api/entrenadores', entrenadorRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 
 app.use((req, res, next) => {

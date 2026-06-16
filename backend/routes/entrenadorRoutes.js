@@ -61,7 +61,10 @@ router.get('/', verificarToken, async (req, res, next) => {
 
 const validarEntrenador = [
   check('nombre').notEmpty().withMessage('El nombre es obligatorio'),
-  check('especialidad').notEmpty().withMessage('La especialidad es obligatoria')
+  check('especialidad').notEmpty().withMessage('La especialidad es obligatoria'),
+  check('email').optional({ checkFalsy: true }).isEmail().withMessage('Email inválido'),
+  check('telefono').optional({ checkFalsy: true }),
+  check('estado').optional().isIn(['Activo', 'Inactivo']).withMessage('Estado inválido')
 ];
 const validarErrores = (req, res, next) => {
   const errores = validationResult(req);
@@ -72,9 +75,38 @@ const validarErrores = (req, res, next) => {
 // POST /api/entrenadores — solo admin
 router.post('/', verificarToken, verificarAdmin, validarEntrenador, validarErrores, async (req, res, next) => {
   try {
-    const { nombre, especialidad, horarios } = req.body;
-    const entrenador = await Entrenador.create({ nombre, especialidad, horarios: horarios || [] });
+    const { nombre, especialidad, horarios, telefono, email, estado } = req.body;
+    const entrenador = await Entrenador.create({
+      nombre,
+      especialidad,
+      horarios: horarios || [],
+      telefono: telefono || '',
+      email: email || '',
+      estado: estado || 'Activo'
+    });
     res.status(201).json(entrenador);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PUT /api/entrenadores/:id — solo admin
+router.put('/:id', verificarToken, verificarAdmin, validarEntrenador, validarErrores, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const entrenador = await Entrenador.findByPk(id);
+    if (!entrenador) return res.status(404).json({ error: 'Entrenador no encontrado' });
+
+    const { nombre, especialidad, horarios, telefono, email, estado } = req.body;
+    await entrenador.update({
+      nombre,
+      especialidad,
+      horarios: horarios || entrenador.horarios || [],
+      telefono: telefono !== undefined ? telefono : entrenador.telefono,
+      email: email !== undefined ? email : entrenador.email,
+      estado: estado !== undefined ? estado : entrenador.estado
+    });
+    res.json(entrenador);
   } catch (error) {
     next(error);
   }

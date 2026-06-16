@@ -7,9 +7,12 @@ const verificarAdmin = require('../middlewares/verificarAdmin');
 
 const validarClase = [
     check('nombre').notEmpty().withMessage('El nombre es obligatorio'),
-    check('instructor').notEmpty().withMessage('El instructor es obligatorio'),
-    check('horario').notEmpty().withMessage('El horario es obligatorio'),
-    check('cupos').isInt({ min: 0 }).withMessage('Los cupos deben ser un número positivo o cero')
+    check('entrenadorId').notEmpty().withMessage('El entrenador es obligatorio'),
+    check('horaInicio').notEmpty().withMessage('La hora de inicio es obligatoria'),
+    check('horaFin').notEmpty().withMessage('La hora de término es obligatoria'),
+    check('dias').isArray({ min: 1 }).withMessage('Debe seleccionar al menos un día'),
+    check('cupos').isInt({ min: 0 }).withMessage('Los cupos deben ser un número positivo o cero'),
+    check('capacidadMax').isInt({ min: 1 }).withMessage('La capacidad máxima debe ser un número positivo')
 ];
 
 const validarErrores = (req, res, next) => {
